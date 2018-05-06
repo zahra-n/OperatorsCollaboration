@@ -10,12 +10,12 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Random;
-import utilities.RequiredClasses.Vehicle;
-import utilities.RequiredClasses.Passenger;
+import utilities.Vehicle;
+import utilities.Operator;
+import utilities.Passenger;
 import utilities.ZahraUtility;
 
 public class NormalDistDynamicFleetProb {
-	
 	
 	/**
 	 * @param args
@@ -27,14 +27,14 @@ public class NormalDistDynamicFleetProb {
 		/*
 		 * setting global variables
 		 */
-		double xLimit = 3000; //in meter
-		double yLimit = 3000; //in meter
+		double xLimit = 1000; //in meter
+		double yLimit = 1000; //in meter
 		int area = (int) (xLimit * yLimit / Math.pow(10, 6));
-		String passDist = "N";
-		String vehDist = "N";
+		String passDist = "N"; // for normal distribution
+		String vehDist = "N"; // for normal distribution
 		int probIteration = 100;
 		int iterations = 100;
-		int iterationWrite = 100;
+		int iterationWrite = 20;
 		double reachMeasure = 100; // in meter
 		double potentialUtil = 5.0;
 		double vehUtilLowerThres = 2.0;
@@ -42,51 +42,54 @@ public class NormalDistDynamicFleetProb {
 		double passUtilThres = 2.0;
 		int vehicleCapacity = 1;
 		int passInterestThres = 5;
-		String [] operators = new String[] {"I", "II"}; //write names of operators
-		double [] operatorsPercenatge = new double[] {0.8, 0.2}; //write their assumed market share
+		ArrayList<Operator> operators = new ArrayList<Operator>();
+		String[][] operatorsList = ZahraUtility.Data(4, 3, "input\\operators.csv");
+		for (int i = 1 ; i < operatorsList.length ; i++)
+		{
+			Operator tempOp = new Operator(Integer.parseInt(operatorsList[i][0]), operatorsList[i][1], Double.parseDouble(operatorsList[i][2]));
+			operators.add(tempOp);
+		}
 		
 		/*
 		 * openning file for probability writing
 		 */
-		File plog = new File("final\\" + area + "sqkm\\" + passDist + vehDist + "\\" + area + "sqkm_probabilities.csv" );
+		File plog = new File("initialRuns\\" + area + "sqkm\\" + passDist + vehDist + "\\" + area + "sqkm_probabilities.csv" );
 		FileWriter pFileWriter = new FileWriter(plog, true);
 		BufferedWriter pBufferedWriter = new BufferedWriter(pFileWriter);
-		pBufferedWriter.write("Area_sqKm,Population,Population_distribution,Vehicles_added_each_iteration,Vehicles_distribution,Success_probability,SP5Per,SP10Per,SP15Per,SP20Per\n");
+		pBufferedWriter.write("Area_sqKm,Population,Population_distribution,Vehicles_added_each_iteration,Vehicles_distribution");
+		for (int o = 0 ; o < operators.size() ; o++)
+		pBufferedWriter.write(",SP_" + operators.get(o).getMarketShare() + "_" + operators.get(o).getName());
 		
 		/*
 		 * starting for loops for passengers and vehicles
 		 */
-		for (int p = 10 ; p < 101 ; p+=10 )
+		for (int p = 50 ; p < 51 ; p+=10 )
 		{
-			for (int v = 200; v < 901 ; v+=100)
+			for (int v = 40; v < 41 ; v+=100)
 			{
-				
-				int probability = 0; //counting successful instances
-				int prob5Per = 0;
-				int prob10Per = 0;
-				int prob15Per = 0;
-				int prob20Per = 0;
+				double [] probability = new double [operators.size()]; //counting successful instances
+//				int prob5Per = 0;
+//				int prob10Per = 0;
+//				int prob15Per = 0;
+//				int prob20Per = 0;
 				int allIterations = 0; // counting all instances
-				
 				int passengerNumber = p * area;
-//				int maxPassengers = 100 * area; 
-				int [] vehAddedInIteration = new int [operators.length] ;
+				int [] vehAddedInIteration = new int [operators.size()] ;
 				int interestedPassengers = 0;
+				int [] matchedVehicles = new int [operators.size()];
 				
-				for (int k = 0 ; k < operators.length ; k++)
+				for (int k = 0 ; k < operators.size() ; k++)
 				{
-					vehAddedInIteration[k] = (int) (v * operatorsPercenatge[k]);
+					vehAddedInIteration[k] = (int) (v * operators.get(k).getMarketShare());
 				}
 				
-				
 
-				
 				for (int probItcounter = 0 ; probItcounter < probIteration ; probItcounter++)
 				{
 					//directory for each probability iteration
-					String dir = "final\\" + area + "sqkm\\" + passDist + vehDist + "\\" + "P" + passDist + passengerNumber + "\\V" + vehDist + v + "\\" + probItcounter + "\\" ;
+					String dir = "initialRuns\\" + area + "sqkm\\" + passDist + vehDist + "\\" + "P" + passDist + passengerNumber + "\\V" + vehDist + v + "\\" + probItcounter + "\\" ;
 					
-					//openning file for writting the aggregatd data
+					//opening file for writing the aggregated data
 					Files.createDirectories(Paths.get(dir));
 					File log = new File(dir + "P" + passengerNumber + passDist + "-V" + v + vehDist + "-" + vehicleCapacity + "C" + ".csv" );
 					FileWriter fileWriter = new FileWriter(log, false);
@@ -95,36 +98,45 @@ public class NormalDistDynamicFleetProb {
 							+ "% Interested passengers,% Matched passengers,% Matched Vehicles,"
 							+ "Interested passengers,Matched passengers,Matched Vehicles,Total Vehicles\n");
 					
-					
+				    File mvlog = new File(dir + "matchedVehicles-P" + passengerNumber + passDist + "-V" + v + vehDist + "-" + vehicleCapacity + "C" + ".csv" );
+					FileWriter mvFileWriter = new FileWriter(mvlog, false);
+					BufferedWriter mvBufferedWriter = new BufferedWriter(mvFileWriter);
+					mvBufferedWriter.write("Iteration");
+					for (int o = 0 ; o < operators.size() ; o++)
+					{
+						mvBufferedWriter.write("," + operators.get(o).getName());
+					}
 					//========================================================================================
 					
 					ArrayList<Passenger> passengers = new ArrayList <Passenger>();
 					ArrayList<Vehicle> vehicles = new ArrayList <Vehicle>();
-					double [] vehicleUtilSum = new double[operators.length];
+					double [] vehicleUtilSum = new double[operators.size()];
 					
 					//generating the population with a normal distribution
-					int initialPassID = -1; // this is to have a continues unique ID for passengers
-					for (int o = 0 ; o < operators.length ; o++)
+					int passIdCounter = 1; // this is to have a continues unique ID for passengers
+					for (int o = 0 ; o < operators.size() ; o++)
 					{
-						for (int i = initialPassID + 1 ; i < passengerNumber * operatorsPercenatge[o]; i++ )
+						for (int i = 0 ; i < passengerNumber * operators.get(o).getMarketShare(); i++ )
 						{
 							Random rnd = new Random();
 							Point passengerCoord = new Point();
 							passengerCoord.setLocation((rnd.nextGaussian()*0.125 + 0.5) * xLimit, (rnd.nextGaussian()*0.125 + 0.5) * yLimit);
-							Passenger tempPassenger = new Passenger (i , passengerCoord, 0.0, 0, 0, -1, operators[o]);
+							Passenger tempPassenger = new Passenger (passIdCounter , passengerCoord, 0.0, 0, 0, -1, operators.get(o).getCode());
 							passengers.add(tempPassenger);
-							initialPassID = i ;
+							passIdCounter++ ;
 						}
 					}
+//					System.out.println("passengers done: " + passengers.size());
 					
 			
 					//iterations start
 					for (int k = 1 ; k <= iterations ; k++)
 					{
+						ZahraUtility.allList2ZeroI(matchedVehicles);
 //						System.out.println( "vehAddedInIteration: " + vehAddedInIteration);
 						interestedPassengers = 0;
 						double passengerUtilSum = 0.0;
-						ZahraUtility.allList2Zero(vehicleUtilSum);
+						ZahraUtility.allList2ZeroD(vehicleUtilSum);
 						int matchedPassengers = 0 ;
 						int unmatchedVehicles = 0;
 						
@@ -132,19 +144,21 @@ public class NormalDistDynamicFleetProb {
 						int startingID = -1; // this is necessary to have unique id for vehicles through all iterations
 						if (vehicles.size() > 0)
 							startingID = vehicles.get(vehicles.size()- 1).id;
-						
-						for (int o = 0 ; o < operators.length ; o++)
+						int vehicleIdCounter = startingID + 1 ;
+						for (int o = 0 ; o < operators.size() ; o++)
 						{
-							for (int i = startingID + 1 ; i <= startingID + vehAddedInIteration[o] ; i++ )
+							for (int i = 0 ; i <= vehAddedInIteration[o] ; i++ )
 							{
 								Random rnd = new Random();
 								Point vehicleCoord = new Point();
 								vehicleCoord.setLocation((rnd.nextGaussian()*0.125 + 0.5) * xLimit, (rnd.nextGaussian()*0.125 + 0.5) * yLimit);
-								Vehicle tempVehicle = new Vehicle (i, vehicleCoord, 0.0, 0, vehicleCapacity, operators[o]);
+								Vehicle tempVehicle = new Vehicle (vehicleIdCounter, vehicleCoord, 0.0, 0, vehicleCapacity, operators.get(o).getCode());
 								vehicles.add(tempVehicle);
-								startingID = i;
+								vehicleIdCounter++ ;
 							}
 						}
+						
+//						System.out.println("passengers: " + passengers.size() + ", vehicles: " + vehicles.size());
 						
 						for (int i = 0 ; i < passengers.size() ; i++ )
 						{
@@ -177,6 +191,8 @@ public class NormalDistDynamicFleetProb {
 								}
 							}// end of vehicle loop
 							
+							
+							//identifying and counting interested passengers based on their previous experience or available vehicle neighbours
 							if (passengers.get(i).neighbour > passInterestThres || passengers.get(i).utility > passUtilThres )
 							{
 								passengers.get(i).setInterest(1);
@@ -187,7 +203,7 @@ public class NormalDistDynamicFleetProb {
 							
 							 
 							
-							
+							//assigning the previously identified nearest vehicle to interested passengers
 							if (passengers.get(i).getInterest() == 1 && passengers.get(i).mtcheVehID > -1 )
 							{					
 								double util = (reachMeasure - finalDist) / reachMeasure * potentialUtil;
@@ -203,6 +219,7 @@ public class NormalDistDynamicFleetProb {
 							
 						}// end of passenger loop
 						
+						//identifying and counting unmatched vehicles
 						for (int i = 0 ; i < vehicles.size() ; i++)
 						{
 							if (vehicles.get(i).capacity == vehicleCapacity)
@@ -213,11 +230,11 @@ public class NormalDistDynamicFleetProb {
 						}
 						
 						
-						//====================calculating the mean utility
+						//====================calculating the mean utility====================
 
 						double meanPassengersUtil = passengerUtilSum / passengers.size();
 						
-						for (int o = 0 ; o < operators.length ; o++)
+						for (int o = 0 ; o < operators.size() ; o++)
 						{
 							for (int i = 0 ; i < vehAddedInIteration[o] ; i++)
 							{
@@ -226,8 +243,8 @@ public class NormalDistDynamicFleetProb {
 						}
 						
 						
-						double [] meanVehUtil = new double [operators.length];
-						for (int o = 0 ; o < operators.length ; o++)
+						double [] meanVehUtil = new double [operators.size()];
+						for (int o = 0 ; o < operators.size() ; o++)
 							meanVehUtil[o] = (vehicleUtilSum[o] / vehAddedInIteration[o] );
 						
 						double matchedPassPercent = (double) matchedPassengers/passengers.size() * 100;
@@ -251,55 +268,69 @@ public class NormalDistDynamicFleetProb {
 							ZahraUtility.write2File(fileContentV.toString(), dir + k + "-vehicles-P" + passengerNumber + passDist + "-V" 
 									+ v + vehDist + "-" + vehicleCapacity + "C" + ".csv");
 						}
-						
+
 						bufferedWriter.write(k + "," + meanPassengersUtil + "," + meanVehUtil + "," 
 								+ (double)interestedPassengers/passengers.size() * 100 + "%," 
 								+  matchedPassPercent + "%," + matchedVehPercent + "%," + interestedPassengers 
 								+ "," + matchedPassengers + "," + (vehicles.size() - unmatchedVehicles) + "," 
-								+ vehicles.size() + "\n");//fileContentAggregated.toString());
-						    
-						    
-						    for (int i = 0 ; i < vehicles.size(); i ++)
+								+ vehicles.size() + "\n");
+						 
+					    //removing the vehicles with low utility
+					    for (int i = 0 ; i < vehicles.size(); i ++)
+						{
+							if (vehicles.get(i).utility < vehUtilLowerThres)
 							{
-								if (vehicles.get(i).utility < vehUtilLowerThres)
-								{
-									vehicles.remove(i);
-									i--;
-								}
-								else
-								{
-									vehicles.get(i).setUtility(0.0);
-									vehicles.get(i).setCapacity(vehicleCapacity);
-									vehicles.get(i).setId(i);
-								}
+								vehicles.remove(i);
+								i--;
 							}
-						    
-						    for (int o = 0 ; o < operators.length ; o++)
-						    {
-								if(meanVehUtil[o] <= vehUtilLowerThres)
-									vehAddedInIteration[o] *= 0.9;
-								else if (meanVehUtil[o] >= vehUtilUpperThres)
-									vehAddedInIteration[o] *= 1.1;
-						    }	
+							else
+							{
+								matchedVehicles[vehicles.get(i).getOperator() - 1]++;
+								vehicles.get(i).setUtility(0.0);
+								vehicles.get(i).setCapacity(vehicleCapacity);
+								vehicles.get(i).setId(i);
+								
+							}
+						}
+					    
+					    mvBufferedWriter.write("\n" + k);
+						for (int o = 0 ; o < operators.size() ; o++)
+						{
+							mvBufferedWriter.write("," + matchedVehicles[o]);
+						}
+						
+					    
+					    // modifying the size of each operator's fleet based on their average utility 
+					    for (int o = 0 ; o < operators.size() ; o++)
+					    {
+							if(meanVehUtil[o] < vehUtilLowerThres)
+								vehAddedInIteration[o] *= 0.9;
+							else if (meanVehUtil[o] >= vehUtilUpperThres)
+								vehAddedInIteration[o] *= 1.1;
+					    }
+					    
+//					    System.out.println("matched vehicles of each operator: " + matchedVehicles[0] + ", " +  matchedVehicles[1]);
 
-									
-						    
-
-						 	
 					}// end of iterations			
+					mvBufferedWriter.close();
+					
+					for (int o = 0 ; o < operators.size() ; o++)
+					{
+						if (matchedVehicles[o] > 0 )
+							probability[o]++ ;
+					}
 					
 					
-					
-					if (interestedPassengers > 0) 
-				    	probability++ ;
-				    if (interestedPassengers >= 0.05 * passengers.size())
-				    	prob5Per++ ;
-				    if (interestedPassengers >= 0.1 * passengers.size())
-				    	prob10Per++ ;
-				    if (interestedPassengers >= 0.15 * passengers.size())
-				    	prob15Per++ ;
-				    if (interestedPassengers >= 0.2 * passengers.size())
-				    	prob20Per++ ;
+//					if (interestedPassengers > 0) 
+//				    	probability++ ;
+//				    if (interestedPassengers >= 0.05 * passengers.size())
+//				    	prob5Per++ ;
+//				    if (interestedPassengers >= 0.1 * passengers.size())
+//				    	prob10Per++ ;
+//				    if (interestedPassengers >= 0.15 * passengers.size())
+//				    	prob15Per++ ;
+//				    if (interestedPassengers >= 0.2 * passengers.size())
+//				    	prob20Per++ ;
 				    
 					allIterations++;
 		//			System.out.println("total:" + allIterations);
@@ -311,17 +342,20 @@ public class NormalDistDynamicFleetProb {
 				    
 				}//end of probability iteration
 				
-				double successProb = (double) probability/allIterations * 100;
-				double successProb5 = (double) prob5Per/allIterations * 100;
-				double successProb10 = (double) prob10Per/allIterations * 100;
-				double successProb15 = (double) prob15Per/allIterations * 100;
-				double successProb20 = (double) prob20Per/allIterations * 100;
-				System.out.println(p + " passengers and " + v + " vehicles: " + successProb + "%");
-				
+//				double successProb = (double) probability/allIterations * 100;
+//				double successProb5 = (double) prob5Per/allIterations * 100;
+//				double successProb10 = (double) prob10Per/allIterations * 100;
+//				double successProb15 = (double) prob15Per/allIterations * 100;
+//				double successProb20 = (double) prob20Per/allIterations * 100;
+//				System.out.println(p + " passengers and " + v + " vehicles: " + successProb + "%");
+				pBufferedWriter.write("\n" + area + "," + passengerNumber + "," + passDist + "," + v + "," + vehDist);
+				for (int o = 0 ; o < operators.size() ; o++)
+					pBufferedWriter.write( "," + probability[o]/allIterations * 100);
+				pBufferedWriter.write("\n");
 
-				pBufferedWriter.write(area + "," + passengerNumber + "," + passDist + "," + v + "," + vehDist + "," +
-										successProb + "," + successProb5 + "," + successProb10 + "," + successProb15 +
-										"," + successProb20 + "\n");
+//				pBufferedWriter.write(area + "," + passengerNumber + "," + passDist + "," + v + "," + vehDist + "," +
+//										successProb + "," + successProb5 + "," + successProb10 + "," + successProb15 +
+//										"," + successProb20 + "\n");
 				
 				}//end of vehicle forLoop
 			}//end of passenger forLoop

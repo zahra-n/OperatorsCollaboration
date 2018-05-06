@@ -24,15 +24,25 @@ import java.util.Scanner;
 
 public class ZahraUtility<T> {
 	
-	public static double [] allList2Zero (double[] inputList){
+	public static double [] allList2ZeroD (double [] inputList){
+		
 		for (int i = 0 ; i < inputList.length ; i++)
 		{
 			inputList[i] = 0.0;
 		}
-		
 		return inputList;
 		
 	}
+	
+	public static int [] allList2ZeroI (int [] inputList){
+		
+		for (int i = 0 ; i < inputList.length ; i++)
+		{
+			inputList[i] = 0;
+		}
+		return inputList;
+		
+	}	
 
 	//reading csv file and putting everything in a matrix  
 	public static String[][] Data (int m, int n, String filePath){

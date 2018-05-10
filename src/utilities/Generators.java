@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
 
-public class CompetitionMethods {
+public class Generators {
 	
 	
 	public static ArrayList<Passenger> passengerGenerator (String distribution, int passengerNumber, ArrayList<Operator> operatorList, double xLimit, double yLimit){

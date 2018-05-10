@@ -11,7 +11,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Random;
 import utilities.Vehicle;
-import utilities.CompetitionMethods;
+import utilities.Generators;
 import utilities.Operator;
 import utilities.Passenger;
 import utilities.ZahraUtility;
@@ -137,7 +137,7 @@ public class Test {
 //						}
 //					}
 					
-					passengers = CompetitionMethods.passengerGenerator(passDist, passengerNumber, operators, xLimit, yLimit);
+					passengers = Generators.passengerGenerator(passDist, passengerNumber, operators, xLimit, yLimit);
 //					System.out.println("passengers done: " + passengers.size());
 					
 			
@@ -168,7 +168,7 @@ public class Test {
 //								vehicleIdCounter++ ;
 //							}
 //						}
-						vehicles = CompetitionMethods.vehicleGenerator(vehDist, vehAddedInIteration, operators, xLimit, yLimit, vehicleCapacity);
+						vehicles = Generators.vehicleGenerator(vehDist, vehAddedInIteration, operators, xLimit, yLimit, vehicleCapacity);
 //						System.out.println("passengers: " + passengers.size() + ", vehicles: " + vehicles.size());
 						
 						for (int i = 0 ; i < passengers.size() ; i++ )

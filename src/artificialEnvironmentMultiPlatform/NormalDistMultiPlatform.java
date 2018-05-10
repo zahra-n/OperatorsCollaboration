@@ -11,6 +11,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Random;
 import utilities.Vehicle;
+import utilities.Generators;
 import utilities.Operator;
 import utilities.Passenger;
 import utilities.ZahraUtility;
@@ -42,6 +43,8 @@ public class NormalDistMultiPlatform {
 		double passUtilThres = 2.0;
 		int vehicleCapacity = 1;
 		int passInterestThres = 5;
+		String mainDir = "initialRuns\\multiPlatform\\" + area + "sqkm\\" + passDist + vehDist + "\\";
+		Files.createDirectories(Paths.get(mainDir));
 		ArrayList<Operator> operators = new ArrayList<Operator>();
 		String[][] operatorsList = ZahraUtility.Data(4, 3, "input\\operators.csv");
 		for (int i = 1 ; i < operatorsList.length ; i++)
@@ -53,9 +56,8 @@ public class NormalDistMultiPlatform {
 		/*
 		 * openning file for probability writing
 		 */
-		File plog = new File("initialRuns\\multiPlatform\\" + area + "sqkm\\" + passDist + vehDist + "\\" + area + "sqkm_probabilities.csv" );
-		FileWriter pFileWriter = new FileWriter(plog, true);
-		BufferedWriter pBufferedWriter = new BufferedWriter(pFileWriter);
+		String probabilityFilePath = mainDir + passDist + vehDist + "-" + area + "sqkm_probabilities.csv";
+		BufferedWriter pBufferedWriter = new BufferedWriter(new FileWriter(new File(probabilityFilePath), true));
 		pBufferedWriter.write("Area_sqKm,Population,Population_distribution,Vehicles_added_each_iteration,Vehicles_distribution");
 		for (int o = 0 ; o < operators.size() ; o++)
 		pBufferedWriter.write(",SP_" + operators.get(o).getMarketShare() + "_" + operators.get(o).getName());
@@ -87,20 +89,18 @@ public class NormalDistMultiPlatform {
 				for (int probItcounter = 0 ; probItcounter < probIteration ; probItcounter++)
 				{
 					//directory for each probability iteration
-					String dir = "initialRuns\\multiPlatform\\" + area + "sqkm\\" + passDist + vehDist + "\\" + "P" + passDist + passengerNumber + "\\V" + vehDist + v + "\\" + probItcounter + "\\" ;
+					String dir = mainDir + "P" + passDist + passengerNumber + "\\V" + vehDist + v + "\\" + probItcounter + "\\" ;
 					
 					//opening file for writing the aggregated data
 					Files.createDirectories(Paths.get(dir));
-					File log = new File(dir + "P" + passengerNumber + passDist + "-V" + v + vehDist + "-" + vehicleCapacity + "C" + ".csv" );
-					FileWriter fileWriter = new FileWriter(log, false);
-					BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+					String aggregatedFilePath = dir + "P" + passengerNumber + passDist + "-V" + v + vehDist + "-" + vehicleCapacity + "C" + ".csv" ;
+					BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(new File(aggregatedFilePath), false));
 					bufferedWriter.write("Iteration,Passengers' mean utility,Vehicles' mean utility,"
 							+ "% Interested passengers,% Matched passengers,% Matched Vehicles,"
 							+ "Interested passengers,Matched passengers,Matched Vehicles,Total Vehicles\n");
 					
-				    File mvlog = new File(dir + "matchedVehicles-P" + passengerNumber + passDist + "-V" + v + vehDist + "-" + vehicleCapacity + "C" + ".csv" );
-					FileWriter mvFileWriter = new FileWriter(mvlog, false);
-					BufferedWriter mvBufferedWriter = new BufferedWriter(mvFileWriter);
+					String matchedVehPathFile = dir + "matchedVehicles-P" + passengerNumber + passDist + "-V" + v + vehDist + "-" + vehicleCapacity + "C" + ".csv"; 
+					BufferedWriter mvBufferedWriter = new BufferedWriter(new FileWriter(new File(matchedVehPathFile), false));
 					mvBufferedWriter.write("Iteration");
 					for (int o = 0 ; o < operators.size() ; o++)
 					{
@@ -112,20 +112,21 @@ public class NormalDistMultiPlatform {
 					ArrayList<Vehicle> vehicles = new ArrayList <Vehicle>();
 					double [] vehicleUtilSum = new double[operators.size()];
 					
+					passengers = Generators.passengerGenerator(passDist, passengerNumber, operators, xLimit, yLimit);
 					//generating the population with a normal distribution
-					int passIdCounter = 1; // this is to have a continues unique ID for passengers
-					for (int o = 0 ; o < operators.size() ; o++)
-					{
-						for (int i = 0 ; i < passengerNumber * operators.get(o).getMarketShare(); i++ )
-						{
-							Random rnd = new Random();
-							Point passengerCoord = new Point();
-							passengerCoord.setLocation((rnd.nextGaussian()*0.125 + 0.5) * xLimit, (rnd.nextGaussian()*0.125 + 0.5) * yLimit);
-							Passenger tempPassenger = new Passenger (passIdCounter , passengerCoord, 0.0, 0, 0, -1, operators.get(o).getCode());
-							passengers.add(tempPassenger);
-							passIdCounter++ ;
-						}
-					}
+//					int passIdCounter = 1; // this is to have a continues unique ID for passengers
+//					for (int o = 0 ; o < operators.size() ; o++)
+//					{
+//						for (int i = 0 ; i < passengerNumber * operators.get(o).getMarketShare(); i++ )
+//						{
+//							Random rnd = new Random();
+//							Point passengerCoord = new Point();
+//							passengerCoord.setLocation((rnd.nextGaussian()*0.125 + 0.5) * xLimit, (rnd.nextGaussian()*0.125 + 0.5) * yLimit);
+//							Passenger tempPassenger = new Passenger (passIdCounter , passengerCoord, 0.0, 0, 0, -1, operators.get(o).getCode());
+//							passengers.add(tempPassenger);
+//							passIdCounter++ ;
+//						}
+//					}
 //					System.out.println("passengers done: " + passengers.size());
 					
 			

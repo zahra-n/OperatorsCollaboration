@@ -51,35 +51,35 @@ public class ZahraUtility<T> {
 		String [][] AllData = new String [m][n];
 		
 		//this part tries to see if the name of the file is correct and if it exist and if not it catches the error and print it====
-				Scanner scanner = null;
-				try {
-					scanner = new Scanner(new File(filePath));
+		Scanner scanner = null;
+		try {
+			scanner = new Scanner(new File(filePath));
+		}
+		catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		scanner.useDelimiter("\n");
+	    while(scanner.hasNext())
+	    {
+	    	for (int i = 0 ; i < m ; i++)
+	    	{
+	    		//first we read each line and put it aside
+		    	eachLine = scanner.next();
+		    	//then each line is splitted into two words it has and put into an array
+		    	splitted = eachLine.split(",");
+	    		//each item of the array is one part of the Unit, which is added to the units
+				for (int j = 0; j < n; j++)
+				{
+					AllData[i][j] = splitted[j].trim();
 				}
-				catch (FileNotFoundException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				
-				scanner.useDelimiter("\n");
-			    while(scanner.hasNext())
-			    {
-			    	for (int i = 0 ; i < m ; i++)
-			    	{
-			    		//first we read each line and put it aside
-				    	eachLine = scanner.next();
-				    	//then each line is splitted into two words it has and put into an array
-				    	splitted = eachLine.split(",");
-			    		//each item of the array is one part of the Unit, which is added to the units
-						for (int j = 0; j < n; j++)
-						{
-							AllData[i][j] = splitted[j].trim();
-						}
-							
-			    	}	        	
-		        }
-		        scanner.close();
-		        
-		        return AllData;
+					
+	    	}	        	
+        }
+        scanner.close();
+        
+        return AllData;
 	}
 	
 	//checking existence of a datum in an array

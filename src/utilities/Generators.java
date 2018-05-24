@@ -54,13 +54,13 @@ public class Generators {
 	
 //======================================================================================================================================
 	
-	public static ArrayList<Vehicle> vehicleGenerator (String distribution, int [] vehAddedInIteration, ArrayList<Operator> operatorList, double xLimit, 
-			double yLimit, int vehicleCapacity){
+	public static ArrayList<Vehicle> vehicleGenerator (String distribution, int [] vehAddedInIteration,
+			ArrayList<Operator> operatorList, double xLimit, double yLimit, int vehicleCapacity){
 
 		ArrayList<Vehicle> vehicles = new ArrayList<Vehicle>();
 		
 		if (distribution.equals("N"))
-		{
+		{			
 			int startingID = -1; // this is necessary to have unique id for vehicles through all iterations
 			if (vehicles.size() > 0)
 				startingID = vehicles.get(vehicles.size()- 1).id;

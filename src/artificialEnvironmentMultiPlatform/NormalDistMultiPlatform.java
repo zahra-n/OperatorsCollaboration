@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Random;
 import utilities.Vehicle;
 import utilities.Generators;
 import utilities.Operator;
@@ -33,10 +32,10 @@ public class NormalDistMultiPlatform {
 		int area = (int) (xLimit * yLimit / Math.pow(10, 6));
 		String passDist = "N"; // for normal distribution
 		String vehDist = "N"; // for normal distribution
-		int probIteration = 100;
-		int iterations = 100;
-		int iterationWrite = 20;
-		double reachMeasure = 100; // in meter
+		int probIteration = 10;
+		int iterations = 10;
+		int iterationWrite = 5;
+		double reachMeasure = 200; // in meter
 		double potentialUtil = 5.0;
 		double vehUtilLowerThres = 2.0;
 		double vehUtilUpperThres = 3.5;
@@ -44,6 +43,7 @@ public class NormalDistMultiPlatform {
 		int vehicleCapacity = 1;
 		int passInterestThres = 5;
 		String mainDir = "initialRuns\\multiPlatform\\" + area + "sqkm\\" + passDist + vehDist + "\\";
+		String probabilityFilePath = mainDir + passDist + vehDist + "-" + area + "sqkm_probabilities.csv";
 		Files.createDirectories(Paths.get(mainDir));
 		ArrayList<Operator> operators = new ArrayList<Operator>();
 		String[][] operatorsList = ZahraUtility.Data(4, 3, "input\\operators.csv");
@@ -55,115 +55,80 @@ public class NormalDistMultiPlatform {
 		
 		/*
 		 * openning file for probability writing
-		 */
-		String probabilityFilePath = mainDir + passDist + vehDist + "-" + area + "sqkm_probabilities.csv";
+		 */		
 		BufferedWriter pBufferedWriter = new BufferedWriter(new FileWriter(new File(probabilityFilePath), true));
 		pBufferedWriter.write("Area_sqKm,Population,Population_distribution,Vehicles_added_each_iteration,Vehicles_distribution");
 		for (int o = 0 ; o < operators.size() ; o++)
-		pBufferedWriter.write(",SP_" + operators.get(o).getMarketShare() + "_" + operators.get(o).getName());
+			pBufferedWriter.write(",SP_" + operators.get(o).getMarketShare() + "_" + operators.get(o).getName());
 		
 		/*
 		 * starting for loops for passengers and vehicles
 		 */
-		for (int p = 50 ; p < 51 ; p+=10 )
+		for (int p = 100 ; p < 101 ; p+=10 )// here set the min and max of population and the increment
 		{
-			for (int v = 40; v < 41 ; v+=100)
+			for (int v = 19; v < 20 ; v+=1)// here set the min and max of vehicle and the increment
 			{
-				double [] probability = new double [operators.size()]; //counting successful instances
-//				int prob5Per = 0;
-//				int prob10Per = 0;
-//				int prob15Per = 0;
-//				int prob20Per = 0;
+				int [] probability = new int [operators.size()]; //counting successful instances
+//				int [] prob5Per = new int [operators.size()];
+//				int [] prob10Per = new int [operators.size()];
+//				int [] prob15Per = new int [operators.size()];
+//				int [] prob20Per = new int [operators.size()];
 				int allIterations = 0; // counting all instances
 				int passengerNumber = p * area;
 				int [] vehAddedInIteration = new int [operators.size()] ;
 				int interestedPassengers = 0;
 				int [] matchedVehicles = new int [operators.size()];
 				
-				for (int k = 0 ; k < operators.size() ; k++)
-				{
-					vehAddedInIteration[k] = (int) (v * operators.get(k).getMarketShare());
-				}
-				
 
 				for (int probItcounter = 0 ; probItcounter < probIteration ; probItcounter++)
 				{
-					//directory for each probability iteration
-					String dir = mainDir + "P" + passDist + passengerNumber + "\\V" + vehDist + v + "\\" + probItcounter + "\\" ;
-					
-					//opening file for writing the aggregated data
-					Files.createDirectories(Paths.get(dir));
-					String aggregatedFilePath = dir + "P" + passengerNumber + passDist + "-V" + v + vehDist + "-" + vehicleCapacity + "C" + ".csv" ;
-					BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(new File(aggregatedFilePath), false));
-					bufferedWriter.write("Iteration,Passengers' mean utility,Vehicles' mean utility,"
-							+ "% Interested passengers,% Matched passengers,% Matched Vehicles,"
-							+ "Interested passengers,Matched passengers,Matched Vehicles,Total Vehicles\n");
-					
-					String matchedVehPathFile = dir + "matchedVehicles-P" + passengerNumber + passDist + "-V" + v + vehDist + "-" + vehicleCapacity + "C" + ".csv"; 
-					BufferedWriter mvBufferedWriter = new BufferedWriter(new FileWriter(new File(matchedVehPathFile), false));
-					mvBufferedWriter.write("Iteration");
-					for (int o = 0 ; o < operators.size() ; o++)
-					{
-						mvBufferedWriter.write("," + operators.get(o).getName());
-					}
-					//========================================================================================
-					
+					for (int k = 0 ; k < operators.size() ; k++)
+						vehAddedInIteration[k] = (int) (v * operators.get(k).getMarketShare());
 					ArrayList<Passenger> passengers = new ArrayList <Passenger>();
 					ArrayList<Vehicle> vehicles = new ArrayList <Vehicle>();
 					double [] vehicleUtilSum = new double[operators.size()];
+					//directory for each probability iteration
+					String dir = mainDir + "P" + passDist + passengerNumber + "\\V" + vehDist + v + "\\" + probItcounter + "\\" ;
+					Files.createDirectories(Paths.get(dir));
 					
-					passengers = Generators.passengerGenerator(passDist, passengerNumber, operators, xLimit, yLimit);
+					//opening file for writing the aggregated data
+					String aggregatedFilePath = dir + "P" + passengerNumber + passDist + "-V" + v + vehDist + "-" + vehicleCapacity + "C" + ".csv" ;
+					String matchedVehPathFile = dir + "matchedVehicles-P" + passengerNumber + passDist + "-V" + v + vehDist + "-" + vehicleCapacity + "C" + ".csv"; 
+					
+					BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(new File(aggregatedFilePath), false));
+					bufferedWriter.write("Iteration,Passengers' mean utility,Interested passengers,% Interested passengers,"
+							+ "Matched passengers,% Matched passengers,Total Vehicles");
+					for (int o = 0 ; o < operators.size() ; o++)
+						bufferedWriter.write("," + operators.get(o).getName() + " mean utility,"+ operators.get(o).getName() 
+								+ " matched vehicels, %" + operators.get(o).getName() + " matched vehicle");
+					bufferedWriter.write("\n");
+										
+					BufferedWriter mvBufferedWriter = new BufferedWriter(new FileWriter(new File(matchedVehPathFile), false));
+					mvBufferedWriter.write("Iteration");
+					for (int o = 0 ; o < operators.size() ; o++)
+						mvBufferedWriter.write("," + operators.get(o).getName());
+		
 					//generating the population with a normal distribution
-//					int passIdCounter = 1; // this is to have a continues unique ID for passengers
-//					for (int o = 0 ; o < operators.size() ; o++)
-//					{
-//						for (int i = 0 ; i < passengerNumber * operators.get(o).getMarketShare(); i++ )
-//						{
-//							Random rnd = new Random();
-//							Point passengerCoord = new Point();
-//							passengerCoord.setLocation((rnd.nextGaussian()*0.125 + 0.5) * xLimit, (rnd.nextGaussian()*0.125 + 0.5) * yLimit);
-//							Passenger tempPassenger = new Passenger (passIdCounter , passengerCoord, 0.0, 0, 0, -1, operators.get(o).getCode());
-//							passengers.add(tempPassenger);
-//							passIdCounter++ ;
-//						}
-//					}
+					passengers = Generators.passengerGenerator(passDist, passengerNumber, operators, xLimit, yLimit);
 //					System.out.println("passengers done: " + passengers.size());
 					
 			
 					//iterations start
 					for (int k = 1 ; k <= iterations ; k++)
 					{
-						ZahraUtility.allList2ZeroI(matchedVehicles);
-//						System.out.println( "vehAddedInIteration: " + vehAddedInIteration);
-						interestedPassengers = 0;
 						double passengerUtilSum = 0.0;
-						ZahraUtility.allList2ZeroD(vehicleUtilSum);
 						int matchedPassengers = 0 ;
-						int unmatchedVehicles = 0;
+						ZahraUtility.allList2ZeroI(matchedVehicles);
+						ZahraUtility.allList2ZeroD(vehicleUtilSum);
+						interestedPassengers = 0;
+
 						
-						//generating the vehicles to add in this iteration with a normal distribution
-						int startingID = -1; // this is necessary to have unique id for vehicles through all iterations
-						if (vehicles.size() > 0)
-							startingID = vehicles.get(vehicles.size()- 1).id;
-						int vehicleIdCounter = startingID + 1 ;
-						for (int o = 0 ; o < operators.size() ; o++)
-						{
-							for (int i = 0 ; i <= vehAddedInIteration[o] ; i++ )
-							{
-								Random rnd = new Random();
-								Point vehicleCoord = new Point();
-								vehicleCoord.setLocation((rnd.nextGaussian()*0.125 + 0.5) * xLimit, (rnd.nextGaussian()*0.125 + 0.5) * yLimit);
-								Vehicle tempVehicle = new Vehicle (vehicleIdCounter, vehicleCoord, 0.0, 0, vehicleCapacity, operators.get(o).getCode());
-								vehicles.add(tempVehicle);
-								vehicleIdCounter++ ;
-							}
-						}
-						
-//						System.out.println("passengers: " + passengers.size() + ", vehicles: " + vehicles.size());
+						//generating vehicles to add in this iteration with a normal distribution						
+						vehicles = Generators.vehicleGenerator(vehDist, vehAddedInIteration, operators, xLimit, yLimit, vehicleCapacity);
+//						System.out.println(probItcounter + "." + k + "passengers: " + passengers.size() + ", vehicles: " + vehicles.size());
 						
 						for (int i = 0 ; i < passengers.size() ; i++ )
 						{
-							
 							passengers.get(i).setMtcheVehID(-1);
 							passengers.get(i).setNeighbour(0);
 							
@@ -172,7 +137,6 @@ public class NormalDistMultiPlatform {
 							
 							for (int j = 0 ; j < vehicles.size() ; j++ )
 							{
-								
 								Point vehicleCoord = vehicles.get(j).coordinate;
 								
 								if (Math.abs(passengerCoord.getX() - vehicleCoord.getX()) <= reachMeasure && Math.abs(passengerCoord.getY() - vehicleCoord.getY()) <= reachMeasure )
@@ -206,12 +170,15 @@ public class NormalDistMultiPlatform {
 							
 							//assigning the previously identified nearest vehicle to interested passengers
 							if (passengers.get(i).getInterest() == 1 && passengers.get(i).mtcheVehID > -1 )
-							{					
+							{
+								int thisVehID = passengers.get(i).mtcheVehID;
 								double util = (reachMeasure - finalDist) / reachMeasure * potentialUtil;
 								passengers.get(i).setUtility(util);
-								vehicles.get(passengers.get(i).mtcheVehID).setUtility(util);
-								vehicles.get(passengers.get(i).mtcheVehID).capacity-- ;
+								vehicles.get(thisVehID).setUtility(util);
+								vehicles.get(thisVehID).capacity-- ;
 								matchedPassengers++;
+								matchedVehicles[vehicles.get(thisVehID).operator - 1]++;
+								vehicleUtilSum[vehicles.get(thisVehID).operator - 1] += vehicles.get(thisVehID).utility;
 							}
 							else
 								passengers.get(i).setUtility(0.0);
@@ -220,36 +187,26 @@ public class NormalDistMultiPlatform {
 							
 						}// end of passenger loop
 						
-						//identifying and counting unmatched vehicles
-						for (int i = 0 ; i < vehicles.size() ; i++)
-						{
-							if (vehicles.get(i).capacity == vehicleCapacity)
-							{
-								vehicles.get(i).utility = 0.0;
-								unmatchedVehicles++;
-							}
-						}
-						
+
 						
 						//====================calculating the mean utility====================
 
-						double meanPassengersUtil = passengerUtilSum / passengers.size();
+						double meanPassengersUtil = passengerUtilSum / passengers.size();					
+						double [] meanVehUtil = new double [operators.size()];
+						double [] matchedVehPercent = new double [operators.size()];
 						
 						for (int o = 0 ; o < operators.size() ; o++)
 						{
-							for (int i = 0 ; i < vehAddedInIteration[o] ; i++)
-							{
-								vehicleUtilSum[o] += vehicles.get(i).utility;
-							}
-						}
-						
-						
-						double [] meanVehUtil = new double [operators.size()];
-						for (int o = 0 ; o < operators.size() ; o++)
 							meanVehUtil[o] = (vehicleUtilSum[o] / vehAddedInIteration[o] );
+							if (matchedVehicles[o] > 0)
+								matchedVehPercent [o] = matchedVehicles[o]/vehAddedInIteration[o] * 100;
+							else
+								matchedVehPercent [o] = 0;
+						}
+							
 						
 						double matchedPassPercent = (double) matchedPassengers/passengers.size() * 100;
-						double matchedVehPercent = (double) (vehicles.size() - unmatchedVehicles)/vehicles.size() * 100;
+						 
 						
 						if (k % iterationWrite == 0 || k == 1)
 						{
@@ -270,14 +227,15 @@ public class NormalDistMultiPlatform {
 									+ v + vehDist + "-" + vehicleCapacity + "C" + ".csv");
 						}
 
-						bufferedWriter.write(k + "," + meanPassengersUtil + "," + meanVehUtil + "," 
+						bufferedWriter.write(k + "," + meanPassengersUtil + "," + interestedPassengers + "," 
 								+ (double)interestedPassengers/passengers.size() * 100 + "%," 
-								+  matchedPassPercent + "%," + matchedVehPercent + "%," + interestedPassengers 
-								+ "," + matchedPassengers + "," + (vehicles.size() - unmatchedVehicles) + "," 
-								+ vehicles.size() + "\n");
-						 
-					    //removing the vehicles with low utility
-					    for (int i = 0 ; i < vehicles.size(); i ++)
+								+ matchedPassengers + "," +  matchedPassPercent + "%," + vehicles.size() );
+						for (int o = 0 ; o < operators.size() ; o++)
+							bufferedWriter.write("," + meanVehUtil[o] + "," + matchedVehicles[o] + "," + matchedVehPercent[o] );
+						bufferedWriter.write("\n");
+						
+						//identifying and removing vehicles with low utility
+						for (int i = 0 ; i < vehicles.size() ; i++)
 						{
 							if (vehicles.get(i).utility < vehUtilLowerThres)
 							{
@@ -286,19 +244,16 @@ public class NormalDistMultiPlatform {
 							}
 							else
 							{
-								matchedVehicles[vehicles.get(i).getOperator() - 1]++;
 								vehicles.get(i).setUtility(0.0);
 								vehicles.get(i).setCapacity(vehicleCapacity);
-								vehicles.get(i).setId(i);
-								
+								vehicles.get(i).setId(i);	
 							}
 						}
+						
 					    
 					    mvBufferedWriter.write("\n" + k);
 						for (int o = 0 ; o < operators.size() ; o++)
-						{
 							mvBufferedWriter.write("," + matchedVehicles[o]);
-						}
 						
 					    
 					    // modifying the size of each operator's fleet based on their average utility 

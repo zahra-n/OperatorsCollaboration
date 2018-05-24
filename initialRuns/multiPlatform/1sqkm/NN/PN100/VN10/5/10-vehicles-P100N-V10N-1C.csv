@@ -1,0 +1,5 @@
+Iteration,Vehicle_ID,X,Y,Utility,Capacity,Neighbours
+10,0,485,528,0.0,1,0,1
+10,1,445,360,0.0,1,0,2
+10,2,618,493,0.0,1,0,3
+

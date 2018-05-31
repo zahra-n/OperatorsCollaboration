@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Random;
 
 public class Generators {
@@ -25,7 +26,7 @@ public class Generators {
 					Random rnd = new Random();
 					Point passengerCoord = new Point();
 					passengerCoord.setLocation((rnd.nextGaussian()*0.125 + 0.5) * xLimit, (rnd.nextGaussian()*0.125 + 0.5) * yLimit);
-					Passenger tempPassenger = new Passenger (passIdCounter , passengerCoord, 0.0, 0, 0, -1, operatorList.get(o).getCode());
+					Passenger tempPassenger = new Passenger (passIdCounter , passengerCoord, 0.0, 0, 0, -1, 0);
 					passengers.add(tempPassenger);
 					passIdCounter++ ;
 				}
@@ -67,7 +68,7 @@ public class Generators {
 			int vehicleIdCounter = startingID + 1 ;
 			for (int o = 0 ; o < operatorList.size() ; o++)
 			{
-				for (int i = 0 ; i <= vehAddedInIteration[o] ; i++ )
+				for (int i = 0 ; i < vehAddedInIteration[o] ; i++ )
 				{
 					Random rnd = new Random();
 					Point vehicleCoord = new Point();
@@ -87,7 +88,7 @@ public class Generators {
 			int vehicleIdCounter = startingID + 1 ;
 			for (int o = 0 ; o < operatorList.size() ; o++)
 			{
-				for (int i = 0 ; i <= vehAddedInIteration[o] ; i++ )
+				for (int i = 0 ; i < vehAddedInIteration[o] ; i++ )
 				{
 					Random rnd = new Random();
 					Point vehicleCoord = new Point();
@@ -101,5 +102,61 @@ public class Generators {
 		
 		return vehicles;
 	}
+	
+	public static ArrayList<Vehicle> vehicleLocalGenerator (String distribution, int [] vehAddedInIteration,
+			ArrayList<Operator> operatorList, double xLimit, double yLimit, int vehicleCapacity){
+
+		ArrayList<Vehicle> vehicles = new ArrayList<Vehicle>();
+		
+		if (distribution.equals("N"))
+		{			
+			int startingID = -1; // this is necessary to have unique id for vehicles through all iterations
+			if (vehicles.size() > 0)
+				startingID = vehicles.get(vehicles.size()- 1).id;
+			int vehicleIdCounter = startingID + 1 ;
+			double startPoint = 0;
+			for (int o = 0 ; o < operatorList.size() ; o++)
+			{
+				double xLimitPartial = operatorList.get(o).getMarketShare() * xLimit;
+//				double ylimitPartial = operatorList.get(o).getMarketShare() * yLimit;
+				for (int i = 0 ; i < vehAddedInIteration[o] ; i++ )
+				{
+					Random rnd = new Random();
+					Point vehicleCoord = new Point();
+					vehicleCoord.setLocation((rnd.nextGaussian()*0.125 + 0.5) * xLimitPartial + startPoint, (rnd.nextGaussian()*0.125 + 0.5) * yLimit);
+					Vehicle tempVehicle = new Vehicle (vehicleIdCounter, vehicleCoord, 0.0, 0, vehicleCapacity, operatorList.get(o).getCode());
+					vehicles.add(tempVehicle);
+					vehicleIdCounter++ ;
+				}
+				startPoint += xLimitPartial;
+			}
+		}
+		
+		else if (distribution.equals("U"))
+		{
+			int startingID = -1; // this is necessary to have unique id for vehicles through all iterations
+			if (vehicles.size() > 0)
+				startingID = vehicles.get(vehicles.size()- 1).id;
+			int vehicleIdCounter = startingID + 1 ;
+			double startPoint = 0;
+			for (int o = 0 ; o < operatorList.size() ; o++)
+			{
+				double xLimitPartial = operatorList.get(o).getMarketShare() * xLimit;
+				for (int i = 0 ; i < vehAddedInIteration[o] ; i++ )
+				{
+					Random rnd = new Random();
+					Point vehicleCoord = new Point();
+					vehicleCoord.setLocation(rnd.nextDouble() * xLimitPartial + startPoint, rnd.nextDouble() * yLimit);
+					Vehicle tempVehicle = new Vehicle (vehicleIdCounter, vehicleCoord, 0.0, 0, vehicleCapacity, operatorList.get(o).getCode());
+					vehicles.add(tempVehicle);
+					vehicleIdCounter++ ;
+				}
+				startPoint += xLimitPartial;
+			}
+		}
+		
+		return vehicles;
+	}
+	
 
 }//end of CompetitionMethods

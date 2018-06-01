@@ -47,7 +47,8 @@ public class OnePlatformDiffSpace {
 		Files.createDirectories(Paths.get(mainDir));
 		String probabilityFilePath = mainDir + passDist + vehDist + "-" + area + "sqkm_probabilities.csv";
 		ArrayList<Operator> operators = new ArrayList<Operator>();
-		String[][] operatorsList = ZahraUtility.Data(3, 3, "input\\operators.csv");
+		int operatorsNumber = ZahraUtility.csvLineCounter("input\\operators.csv");
+		String[][] operatorsList = ZahraUtility.Data(operatorsNumber, 3, "input\\operators.csv");
 		for (int i = 1 ; i < operatorsList.length ; i++)
 		{
 			Operator tempOp = new Operator(Integer.parseInt(operatorsList[i][0]), operatorsList[i][1], Double.parseDouble(operatorsList[i][2]));

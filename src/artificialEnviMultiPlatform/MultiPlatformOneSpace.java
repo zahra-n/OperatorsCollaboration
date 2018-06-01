@@ -36,18 +36,19 @@ public class MultiPlatformOneSpace {
 		int probIteration = 100;
 		int iterations = 100;
 		int iterationWrite = 25;
-		double reachMeasure = 100; // in meter
-		double potentialUtil = 5.0;
-		double vehUtilLowerThres = 2.0;
-		double vehUtilUpperThres = 3.5;
-		double passUtilThres = 2.0;
+		double reachMeasure = 400; // in meter
+		double potentialUtil = 100.0;
+		double vehUtilLowerThres = 40.0;
+		double vehUtilUpperThres = 80.0;
+		double passUtilThres = 40.0;
 		int vehicleCapacity = 1;
 		int passInterestThres = 2;
 		String mainDir = "initialRuns\\multiPlatform\\" + area + "sqkm\\" + passDist + vehDist + "\\";
 		String probabilityFilePath = mainDir + passDist + vehDist + "-" + area + "sqkm_probabilities.csv";
 		Files.createDirectories(Paths.get(mainDir));
 		ArrayList<Operator> operators = new ArrayList<Operator>();
-		String[][] operatorsList = ZahraUtility.Data(3, 3, "input\\operators.csv");
+		int operatorsNumber = ZahraUtility.csvLineCounter("input\\operators.csv");
+		String[][] operatorsList = ZahraUtility.Data(operatorsNumber, 3, "input\\operators.csv");
 		for (int i = 1 ; i < operatorsList.length ; i++)
 		{
 			Operator tempOp = new Operator(Integer.parseInt(operatorsList[i][0]), operatorsList[i][1], Double.parseDouble(operatorsList[i][2]));
@@ -67,7 +68,7 @@ public class MultiPlatformOneSpace {
 		 */
 		for (int p = 100 ; p < 101 ; p+=10 )// here set the min and max of population and the increment
 		{
-			for (int v = 900 ; v < 901 ; v+=10)// here set the min and max of vehicle and the increment
+			for (int v = 100 ; v < 101 ; v+=10)// here set the min and max of vehicle and the increment
 			{
 				double [] probability = new double [operators.size()]; //counting successful instances
 //				int [] prob5Per = new int [operators.size()];
@@ -78,7 +79,7 @@ public class MultiPlatformOneSpace {
 				int passengerNumber = p * area;
 				int [] vehAddedInIteration = new int [operators.size()] ;
 				int interestedPassengers = 0;
-				int [] matchedVehicles = new int [operators.size()];
+				double [] matchedVehicles = new double [operators.size()];
 				
 
 				for (int probItcounter = 0 ; probItcounter < probIteration ; probItcounter++)
@@ -114,7 +115,7 @@ public class MultiPlatformOneSpace {
 					{
 						double passengerUtilSum = 0.0;
 						int matchedPassengers = 0 ;
-						ZahraUtility.allList2ZeroI(matchedVehicles);
+						ZahraUtility.allList2ZeroD(matchedVehicles);
 						ZahraUtility.allList2ZeroD(vehicleUtilSum);
 						interestedPassengers = 0;
 
@@ -249,22 +250,24 @@ public class MultiPlatformOneSpace {
 						}
 					
 					    
-					    // modifying the size of each operator's fleet based on their average utility 
-					    for (int o = 0 ; o < operators.size() ; o++)
-					    {
-							if(meanVehUtil[o] < vehUtilLowerThres)
-								vehAddedInIteration[o] *= 0.9;
-							else if (meanVehUtil[o] >= vehUtilUpperThres)
-								vehAddedInIteration[o] *= 1.1;
-					    }
-					    
-//					    System.out.println("matched vehicles of each operator: " + matchedVehicles[0] + ", " +  matchedVehicles[1]);
+					    // modifying the size of each operator's fleet based on their average utility
+//						if (k % 10 == 0)
+//						{
+						    for (int o = 0 ; o < operators.size() ; o++)
+						    {
+								if(meanVehUtil[o] < vehUtilLowerThres)
+									vehAddedInIteration[o] *= 0.9;
+								else if (meanVehUtil[o] >= vehUtilUpperThres)
+									vehAddedInIteration[o] *= 1.1;
+						    }
+//						}
+					   
 
 					}// end of iterations
 					
 					for (int o = 0 ; o < operators.size() ; o++)
 					{
-						if (matchedVehicles[o] > 0 )
+						if (matchedVehicles[o] > 5 )
 							probability[o]++ ;
 					}
 					

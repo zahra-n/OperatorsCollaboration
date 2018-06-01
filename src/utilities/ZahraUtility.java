@@ -454,5 +454,18 @@ public class ZahraUtility<T> {
 		        return allData;
 	}
 	
+	public static int csvLineCounter (String filePath) throws IOException {
+		
+		BufferedReader bufferedReader = new BufferedReader(new FileReader(filePath));
+	     String input;
+	     int count = 0;
+	     while((input = bufferedReader.readLine()) != null)
+	     {
+	         count++;
+	     }
+		return count;
+		
+	}
+	
 
 }//end of class

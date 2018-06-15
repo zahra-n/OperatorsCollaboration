@@ -73,7 +73,7 @@ public class Generators {
 					Random rnd = new Random();
 					Point vehicleCoord = new Point();
 					vehicleCoord.setLocation((rnd.nextGaussian()*0.125 + 0.5) * xLimit, (rnd.nextGaussian()*0.125 + 0.5) * yLimit);
-					Vehicle tempVehicle = new Vehicle (vehicleIdCounter, vehicleCoord, 0.0, 0, vehicleCapacity, operatorList.get(o).getCode());
+					Vehicle tempVehicle = new Vehicle (vehicleIdCounter, vehicleCoord, 0.0, 0, vehicleCapacity, operatorList.get(o).getCode(), 1);
 					vehicles.add(tempVehicle);
 					vehicleIdCounter++ ;
 				}
@@ -93,7 +93,7 @@ public class Generators {
 					Random rnd = new Random();
 					Point vehicleCoord = new Point();
 					vehicleCoord.setLocation(rnd.nextDouble() * xLimit, rnd.nextDouble() * yLimit);
-					Vehicle tempVehicle = new Vehicle (vehicleIdCounter, vehicleCoord, 0.0, 0, vehicleCapacity, operatorList.get(o).getCode());
+					Vehicle tempVehicle = new Vehicle (vehicleIdCounter, vehicleCoord, 0.0, 0, vehicleCapacity, operatorList.get(o).getCode(), 1);
 					vehicles.add(tempVehicle);
 					vehicleIdCounter++ ;
 				}
@@ -124,7 +124,7 @@ public class Generators {
 					Random rnd = new Random();
 					Point vehicleCoord = new Point();
 					vehicleCoord.setLocation((rnd.nextGaussian()*0.125 + 0.5) * xLimitPartial + startPoint, (rnd.nextGaussian()*0.125 + 0.5) * yLimit);
-					Vehicle tempVehicle = new Vehicle (vehicleIdCounter, vehicleCoord, 0.0, 0, vehicleCapacity, operatorList.get(o).getCode());
+					Vehicle tempVehicle = new Vehicle (vehicleIdCounter, vehicleCoord, 0.0, 0, vehicleCapacity, operatorList.get(o).getCode(), 1);
 					vehicles.add(tempVehicle);
 					vehicleIdCounter++ ;
 				}
@@ -147,7 +147,7 @@ public class Generators {
 					Random rnd = new Random();
 					Point vehicleCoord = new Point();
 					vehicleCoord.setLocation(rnd.nextDouble() * xLimitPartial + startPoint, rnd.nextDouble() * yLimit);
-					Vehicle tempVehicle = new Vehicle (vehicleIdCounter, vehicleCoord, 0.0, 0, vehicleCapacity, operatorList.get(o).getCode());
+					Vehicle tempVehicle = new Vehicle (vehicleIdCounter, vehicleCoord, 0.0, 0, vehicleCapacity, operatorList.get(o).getCode(), 1);
 					vehicles.add(tempVehicle);
 					vehicleIdCounter++ ;
 				}
@@ -158,5 +158,65 @@ public class Generators {
 		return vehicles;
 	}
 	
+	public static ArrayList<Vehicle> vehiclePolarGenerator (String distribution, int [] vehAddedInIteration,
+			ArrayList<Operator> operatorList, double xLimit, double yLimit, int vehicleCapacity){
+
+		ArrayList<Vehicle> vehicles = new ArrayList<Vehicle>();
+		
+		if (distribution.equals("N"))
+		{			
+			int startingID = -1; // this is necessary to have unique id for vehicles through all iterations
+			if (vehicles.size() > 0)
+				startingID = vehicles.get(vehicles.size()- 1).id;
+			int vehicleIdCounter = startingID + 1 ;
+			double startPoint = 0;
+			for (int o = 0 ; o < operatorList.size() ; o++)
+			{
+				double tetha = Math.toRadians(360 * operatorList.get(o).getMarketShare());
+				
+				for (int i = 0 ; i < vehAddedInIteration[o] ; i++ )
+				{
+					Random rnd = new Random();
+					Point vehicleCoord = new Point();
+					double alpha = Math.random() * tetha + startPoint;
+					double radius = Math.abs(rnd.nextGaussian() * 0.125) * xLimit ;
+					vehicleCoord.setLocation(radius * Math.cos(alpha) + xLimit/2 , radius * Math.sin(alpha) + yLimit/2 );
+					Vehicle tempVehicle = new Vehicle (vehicleIdCounter, vehicleCoord, 0.0, 0, vehicleCapacity, operatorList.get(o).getCode(), 1);
+					vehicles.add(tempVehicle);
+					vehicleIdCounter++ ;
+				}
+				startPoint += tetha; 
+			}
+		}
+		
+		else if (distribution.equals("U"))
+		{
+			int startingID = -1; // this is necessary to have unique id for vehicles through all iterations
+			if (vehicles.size() > 0)
+				startingID = vehicles.get(vehicles.size()- 1).id;
+			int vehicleIdCounter = startingID + 1 ;
+			double startPoint = 0;
+			for (int o = 0 ; o < operatorList.size() ; o++)
+			{
+				double tetha = Math.toRadians(360 * operatorList.get(o).getMarketShare());
+				
+				for (int i = 0 ; i < vehAddedInIteration[o] ; i++ )
+				{
+					Random rnd = new Random();
+					Point vehicleCoord = new Point();
+					double alpha = Math.random() * tetha + startPoint;
+					double radius = rnd.nextDouble() * xLimit/2 ;
+					vehicleCoord.setLocation(radius * Math.cos(alpha) + xLimit/2 , radius * Math.sin(alpha) + yLimit/2 );
+					Vehicle tempVehicle = new Vehicle (vehicleIdCounter, vehicleCoord, 0.0, 0, vehicleCapacity, operatorList.get(o).getCode(), 1);
+					vehicles.add(tempVehicle);
+					vehicleIdCounter++ ;
+				}
+				startPoint += tetha;
+			}
+		}
+		
+		return vehicles;
+	}
+		
 
 }//end of CompetitionMethods

@@ -1,5 +1,5 @@
-Code,Name,Market_Share
-1,Cheesecake,0.5
-2,Profiterole,0.2
-3,Mudcake,0.1
-4,Muffin,0.2
+Code,Name,Market_Share,Market_Share,Market_Share
+1,Cheesecake,0.7,0.52,0.25
+2,Profiterole,0.1,0.16,0.25
+3,Mudcake,0.1,0.16,0.25
+4,Brownies,0.1,0.16,0.25

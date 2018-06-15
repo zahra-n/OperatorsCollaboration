@@ -467,5 +467,16 @@ public class ZahraUtility<T> {
 		
 	}
 	
+    public static int csvColCounter (String filePath) throws IOException {
+		
+		BufferedReader bufferedReader = new BufferedReader(new FileReader(filePath));
+	     String input;
+	     int cols = 0;
+	     String[] firstRow = bufferedReader.readLine().split(",");
+	        cols =  firstRow.length;
+		return cols;
+		
+	}
+	
 
 }//end of class

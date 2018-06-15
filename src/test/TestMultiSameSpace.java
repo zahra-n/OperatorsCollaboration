@@ -1,4 +1,4 @@
-package artificialEnviOnePlatform;
+package test;
 
 import java.awt.Point;
 import java.awt.Toolkit;
@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Random;
+
 import utilities.Vehicle;
 import utilities.Generators;
 import utilities.Methods;
@@ -16,7 +18,7 @@ import utilities.Operator;
 import utilities.Passenger;
 import utilities.ZahraUtility;
 
-public class OnePlatformOneSpace {
+public class TestMultiSameSpace {
 	
 	/**
 	 * @param args
@@ -32,23 +34,25 @@ public class OnePlatformOneSpace {
 		double yLimit = 3000; //in meter
 		int area = (int) (xLimit * yLimit / Math.pow(10, 6));
 		String passDist = "N"; // for normal distribution
-		String vehDist = "N"; // for normal distribution
+		String vehDist = "U"; // for normal distribution
+		int passengerNumber = 900;
 		int probIteration = 100;
 		int iterations = 100;
-		int iterationWrite = 25;
+		int iterationWrite = 50;
 		double reachMeasure = 100; // in meter
-		double potentialUtil = 5.0;
-		double vehUtilLowerThres = 2.0;
-		double vehUtilUpperThres = 3.5;
-		double passUtilThres = 2.0;
+		double potentialUtil = 100.0;
+		double vehUtilLowerThres = 40.0;
+		double vehUtilUpperThres = 80.0;
+		double passUtilThres = 40.0;
 		int vehicleCapacity = 1;
-		int passInterestThres = 2;
-		String mainDir = "initialRuns\\OnePlatform\\" + area + "sqkm\\" + passDist + vehDist + "\\";
-		String probabilityFilePath = mainDir + passDist + vehDist + "-" + area + "sqkm_probabilities.csv";
+		int passInterestThres = 5;
+		String mainDir = "initialRuns\\test\\multiPlatform\\oneSpace\\" + area + "sqkm\\" ;
+		String probabilityFilePath = mainDir + "multi-one-" + area + "sqkm_probabilities.csv";
 		Files.createDirectories(Paths.get(mainDir));
 		ArrayList<Operator> operators = new ArrayList<Operator>();
 		int operatorsNumber = ZahraUtility.csvLineCounter("input\\operators.csv");
-		String[][] operatorsList = ZahraUtility.Data(operatorsNumber, 3, "input\\operators.csv");
+		int scenarios = ZahraUtility.csvColCounter("input\\operators.csv") ;
+		String[][] operatorsList = ZahraUtility.Data(operatorsNumber, scenarios, "input\\operators.csv");
 		for (int i = 1 ; i < operatorsList.length ; i++)
 		{
 			Operator tempOp = new Operator(Integer.parseInt(operatorsList[i][0]), operatorsList[i][1], Double.parseDouble(operatorsList[i][2]));
@@ -66,9 +70,19 @@ public class OnePlatformOneSpace {
 		/*
 		 * starting for loops for passengers and vehicles
 		 */
-		for (int p = 100 ; p < 101 ; p+=10 )// here set the min and max of population and the increment
+		for (int s = 2 ; s < scenarios ; s++ )
 		{
-			for (int v = 900 ; v < 901 ; v+=10)// here set the min and max of vehicle and the increment
+			operators.clear();
+			for (int i = 1 ; i < operatorsList.length ; i++)
+			{
+				Operator tempOp = new Operator(Integer.parseInt(operatorsList[i][0]), operatorsList[i][1], Double.parseDouble(operatorsList[i][s]));
+				operators.add(tempOp);
+			}
+			pBufferedWriter.write("Area_sqKm,Population,Population_distribution,Vehicles_added_each_iteration,Vehicles_distribution");
+			for (int o = 0 ; o < operators.size() ; o++)
+				pBufferedWriter.write(",SP_" + operators.get(o).getMarketShare() + "_" + operators.get(o).getName());
+			
+			for (int v = 300 ; v < 901 ; v+=10000)// here set the min and max of vehicle and the increment
 			{
 				double [] probability = new double [operators.size()]; //counting successful instances
 //				int [] prob5Per = new int [operators.size()];
@@ -76,10 +90,11 @@ public class OnePlatformOneSpace {
 //				int [] prob15Per = new int [operators.size()];
 //				int [] prob20Per = new int [operators.size()];
 				int allIterations = 0; // counting all instances
-				int passengerNumber = p * area;
+				
 				int [] vehAddedInIteration = new int [operators.size()] ;
 				int interestedPassengers = 0;
-				int [] matchedVehicles = new int [operators.size()];
+				int matchedPassengers = 0 ;
+				double [] matchedVehicles = new double [operators.size()];
 				
 
 				for (int probItcounter = 0 ; probItcounter < probIteration ; probItcounter++)
@@ -90,7 +105,7 @@ public class OnePlatformOneSpace {
 					ArrayList<Vehicle> vehicles = new ArrayList <Vehicle>();
 					double [] vehicleUtilSum = new double[operators.size()];
 					//directory for each probability iteration
-					String dir = mainDir + "P" + passDist + passengerNumber + "\\V" + vehDist + v + "\\" + probItcounter + "\\" ;
+					String dir = mainDir + passDist + vehDist + "\\" + "O"+ (operators.size()) + "-" + operators.get(0).getMarketShare() + "-P" + passDist + "_V" + vehDist + "\\" + probItcounter + "\\" ;
 					Files.createDirectories(Paths.get(dir));
 					
 					//opening file for writing the aggregated data
@@ -107,23 +122,23 @@ public class OnePlatformOneSpace {
 		
 					//generating the population with a normal distribution
 					passengers = Generators.passengerGenerator(passDist, passengerNumber, operators, xLimit, yLimit);
-//					System.out.println("passengers done: " + passengers.size());
 					
 			
 					//iterations start
 					for (int k = 1 ; k <= iterations ; k++)
 					{
+						int extraDemand = interestedPassengers - matchedPassengers;
+						double [] meanVehUtil = new double [operators.size()];
 						double passengerUtilSum = 0.0;
-						int matchedPassengers = 0 ;
-						ZahraUtility.allList2ZeroI(matchedVehicles);
+						matchedPassengers = 0 ;
+						ZahraUtility.allList2ZeroD(matchedVehicles);
 						ZahraUtility.allList2ZeroD(vehicleUtilSum);
 						interestedPassengers = 0;
 
-						
-						//generating vehicles to add in this iteration with a normal distribution						
 						vehicles = Generators.vehicleGenerator(vehDist, vehAddedInIteration, operators, xLimit, yLimit, vehicleCapacity);
-//						System.out.println(probItcounter + "." + k + "passengers: " + passengers.size() + ", vehicles: " + vehicles.size());
-						
+					
+						passengers = Methods.defaultOpDinfer(passengers, vehicles, operators, reachMeasure);
+						int [] defaultOperator = new int [operators.size()];
 						for (int i = 0 ; i < passengers.size() ; i++ )
 						{
 							passengers.get(i).setMtcheVehID(-1);
@@ -134,23 +149,25 @@ public class OnePlatformOneSpace {
 							
 							for (int j = 0 ; j < vehicles.size() ; j++ )
 							{
+								
 								Point vehicleCoord = vehicles.get(j).coordinate;
 								
 								if (Math.abs(passengerCoord.getX() - vehicleCoord.getX()) <= reachMeasure && Math.abs(passengerCoord.getY() - vehicleCoord.getY()) <= reachMeasure )
 								{
 									double distance = passengerCoord.distance( vehicleCoord );
 									
-									if (distance < reachMeasure)
+									if (distance < reachMeasure && vehicles.get(j).getOperator() == passengers.get(i).defaultOperator)
 									{
 										passengers.get(i).neighbour++;
 										 
-										if (distance < finalDist && vehicles.get(j).capacity > 0 )
+										if (distance < finalDist && vehicles.get(j).capacity > 0 && vehicles.get(j).getOperator() == passengers.get(i).defaultOperator)
 										{
 											finalDist = distance;
 											passengers.get(i).setMtcheVehID(j);	
 										}
 									}
 								}
+								
 							}// end of vehicle loop
 							
 							
@@ -180,8 +197,9 @@ public class OnePlatformOneSpace {
 							else
 								passengers.get(i).setUtility(0.0);
 							
-							passengerUtilSum += passengers.get(i).utility;							
-							
+							passengerUtilSum += passengers.get(i).utility;		
+							if (passengers.get(i).defaultOperator > 0)
+								defaultOperator[passengers.get(i).defaultOperator - 1]++;
 						}// end of passenger loop
 						
 
@@ -189,7 +207,8 @@ public class OnePlatformOneSpace {
 						//====================calculating the mean utility====================
 
 						double meanPassengersUtil = passengerUtilSum / passengers.size();					
-						double [] meanVehUtil = new double [operators.size()];
+//						double [] meanVehUtil = new double [operators.size()];
+						ZahraUtility.allList2ZeroD(meanVehUtil);
 						double [] matchedVehPercent = new double [operators.size()];
 						
 						for (int o = 0 ; o < operators.size() ; o++)
@@ -205,7 +224,7 @@ public class OnePlatformOneSpace {
 						double matchedPassPercent = (double) matchedPassengers/passengers.size() * 100;
 						 
 						
-						if (k % iterationWrite == 0 || k == 1)
+						if (k % iterationWrite == 0 || k == 1 )//|| k == 2 || k == 3 || k == 4 || k == 5)
 						{
 							StringBuilder fileContentP = new StringBuilder();
 							StringBuilder fileContentV = new StringBuilder();
@@ -234,6 +253,7 @@ public class OnePlatformOneSpace {
 						//identifying and removing vehicles with low utility
 						for (int i = 0 ; i < vehicles.size() ; i++)
 						{
+							
 							if (vehicles.get(i).utility < vehUtilLowerThres)
 							{
 								vehicles.remove(i);
@@ -248,22 +268,27 @@ public class OnePlatformOneSpace {
 						}
 					
 					    
-					    // modifying the size of each operator's fleet based on their average utility 
-					    for (int o = 0 ; o < operators.size() ; o++)
-					    {
-							if(meanVehUtil[o] < vehUtilLowerThres)
-								vehAddedInIteration[o] *= 0.9;
-							else if (meanVehUtil[o] >= vehUtilUpperThres)
-								vehAddedInIteration[o] *= 1.1;
-					    }
-					    
-//					    System.out.println("matched vehicles of each operator: " + matchedVehicles[0] + ", " +  matchedVehicles[1]);
+					    // modifying the size of each operator's fleet based on their average utility
+//						if (k % 10 == 0)
+//						{
+						    for (int o = 0 ; o < operators.size() ; o++)
+						    {
+//						    	if (vehAddedInIteration[o] < passengerNumber )
+//						    	{
+									if(meanVehUtil[o] < vehUtilLowerThres)
+										vehAddedInIteration[o] *= 0.9;
+									else if (meanVehUtil[o] >= vehUtilUpperThres || defaultOperator[o] > passengerNumber * 0.2)
+										vehAddedInIteration[o] *= 1.1;
+//						    	}
+						    }
+//						}
+					   
 
 					}// end of iterations
 					
 					for (int o = 0 ; o < operators.size() ; o++)
 					{
-						if (matchedVehicles[o] > 0 )
+						if (matchedVehicles[o] > 5 )
 							probability[o]++ ;
 					}
 					

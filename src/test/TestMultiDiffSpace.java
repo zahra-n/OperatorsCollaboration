@@ -1,4 +1,4 @@
-package artificialEnviMultiPlatform;
+package test;
 
 import java.awt.Point;
 import java.awt.Toolkit;
@@ -18,14 +18,13 @@ import utilities.Operator;
 import utilities.Passenger;
 import utilities.ZahraUtility;
 
-public class MultiPlatformDiffSpace {
+public class TestMultiDiffSpace {
 	
 	/**
 	 * @param args
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws IOException {
-		String outputDir = "G:\\My Drive\\Zahra-Navidi_PhD\\OperatorsCompetition\\";
 		// TODO Auto-generated method stub
 		
 		/*
@@ -40,14 +39,14 @@ public class MultiPlatformDiffSpace {
 		int probIteration = 100;
 		int iterations = 100;
 		int iterationWrite = 50;
-		double reachMeasure = 100; // in meter
+		double reachMeasure = 400; // in meter
 		double potentialUtil = 100.0;
 		double vehUtilLowerThres = 40.0;
 		double vehUtilUpperThres = 80.0;
 		double passUtilThres = 40.0;
 		int vehicleCapacity = 1;
 		int passInterestThres = 5;
-		String mainDir = outputDir + "output\\multiPlatform\\differentSpace\\" + area + "sqkm\\" ;
+		String mainDir = "initialRuns\\test\\multiPlatform\\differentSpace\\" + area + "sqkm\\" ;
 		String probabilityFilePath = mainDir + "multi-diff-" + area + "sqkm_probabilities.csv";
 		Files.createDirectories(Paths.get(mainDir));
 		ArrayList<Operator> operators = new ArrayList<Operator>();
@@ -124,7 +123,7 @@ public class MultiPlatformDiffSpace {
 					for (int k = 1 ; k <= iterations ; k++)
 					{
 						vehicles = Generators.vehiclePolarGenerator(vehDist, vehAddedInIteration, operators, xLimit, yLimit, vehicleCapacity);
-
+//						int extraDemand = interestedPassengers - matchedPassengers;
 						double [] meanVehUtil = new double [operators.size()];
 						double passengerUtilSum = 0.0;
 						matchedPassengers = 0 ;

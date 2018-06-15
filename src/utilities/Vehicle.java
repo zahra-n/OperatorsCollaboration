@@ -10,9 +10,10 @@ public class Vehicle {
 	public int neighbour;
 	public int capacity;
 	public int operator;
+	public int interest;
 	
 	
-	public Vehicle(int id, Point coordinate, double utility, int neighbour, int capacity, int operator) {
+	public Vehicle(int id, Point coordinate, double utility, int neighbour, int capacity, int operator, int interest) {
 		super();
 		this.id = id;
 		this.coordinate = coordinate;
@@ -20,6 +21,7 @@ public class Vehicle {
 		this.neighbour = neighbour;
 		this.capacity = capacity;
 		this.operator = operator;
+		this.interest = interest;
 	}
 	
 	public int getId() {
@@ -67,6 +69,6 @@ public class Vehicle {
 
 	@Override
 	public String toString() {
-		return  id + "," + coordinate.x + "," + coordinate.y + "," + utility + "," + capacity + "," + neighbour + "," + operator;
+		return  id + "," + coordinate.x + "," + coordinate.y + "," + utility + "," + capacity + "," + neighbour + "," + operator + "," + interest;
 	}
 }

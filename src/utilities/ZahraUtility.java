@@ -477,6 +477,20 @@ public class ZahraUtility<T> {
 		return cols;
 		
 	}
+    
+    public static int maxofList (int [] list) {
+    	
+    	int max = -1;
+    	int maxValue = -1;
+    	for (int i = 0 ; i < list.length ; i ++)
+    	{
+    		if (list[i] > maxValue)
+    			max = i;
+    	}
+    	
+		return max;
+    	
+    }
 	
 
 }//end of class

@@ -9,22 +9,21 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Random;
 
 import utilities.Vehicle;
 import utilities.Generators;
-import utilities.Methods;
 import utilities.Operator;
 import utilities.Passenger;
 import utilities.ZahraUtility;
 
-public class TestMultiDiffSpace {
+public class TestOnePlatformDiffSpace {
 	
 	/**
 	 * @param args
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws IOException {
+		String outputDir = "C:\\Users\\znavidikasha\\eclipse\\OperatorsCompetition\\test\\";
 		// TODO Auto-generated method stub
 		
 		/*
@@ -32,22 +31,23 @@ public class TestMultiDiffSpace {
 		 */
 		double xLimit = 3000; //in meter
 		double yLimit = 3000; //in meter
-		int area = (int) (xLimit * yLimit / Math.pow(10, 6));
-		String passDist = "N"; // for normal distribution
-		String vehDist = "N"; // for normal distribution
+		int area = (int) (xLimit * yLimit / Math.pow(10, 6)); //(m^2)
+		String passDist = "N"; 
+		String vehDist = "N"; 
 		int passengerNumber = 900;
+		int successThreshold = 5;
 		int probIteration = 100;
 		int iterations = 100;
 		int iterationWrite = 50;
-		double reachMeasure = 400; // in meter
-		double potentialUtil = 100.0;
-		double vehUtilLowerThres = 40.0;
-		double vehUtilUpperThres = 80.0;
-		double passUtilThres = 40.0;
+		double reachMeasure = 100; // in meter
+		double potentialUtil = 5.0;
+		double vehUtilLowerThres = 2.0;
+		double vehUtilUpperThres = 4.0;
+		double passUtilThres = 2.0;
 		int vehicleCapacity = 1;
 		int passInterestThres = 5;
-		String mainDir = "initialRuns\\test\\multiPlatform\\differentSpace\\" + area + "sqkm\\" ;
-		String probabilityFilePath = mainDir + "multi-diff-" + area + "sqkm_probabilities.csv";
+		String mainDir = outputDir + "output\\OnePlatform\\diffSpaceL\\" + area + "sqkm\\" ;
+		String probabilityFilePath = mainDir + "One-diff-" + area + "sqkm_probabilities.csv";
 		Files.createDirectories(Paths.get(mainDir));
 		ArrayList<Operator> operators = new ArrayList<Operator>();
 		int operatorsNumber = ZahraUtility.csvLineCounter("input\\operators.csv");
@@ -112,27 +112,24 @@ public class TestMultiDiffSpace {
 						bufferedWriter.write("," + operators.get(o).getName() + " mean utility,"+ operators.get(o).getName() 
 								+ " matched vehicels, %" + operators.get(o).getName() + " matched vehicle");
 					bufferedWriter.write("\n");
-			
 		
-					//generating the population with a normal distribution
-					passengers = Generators.passengerGenerator(passDist, passengerNumber, operators, xLimit, yLimit);
-					
-
 
 					//iterations start
 					for (int k = 1 ; k <= iterations ; k++)
 					{
-						vehicles = Generators.vehiclePolarGenerator(vehDist, vehAddedInIteration, operators, xLimit, yLimit, vehicleCapacity);
-//						int extraDemand = interestedPassengers - matchedPassengers;
+						//generating the population with a normal distribution
+						passengers = Generators.passengerGenerator(passDist, passengerNumber, operators, xLimit, yLimit);
+						vehicles = Generators.vehicleLocalGenerator(vehicles, vehDist, vehAddedInIteration, operators, xLimit, yLimit, vehicleCapacity);
+
+						int [] operatorsFleetSize = new int [operators.size()];
 						double [] meanVehUtil = new double [operators.size()];
 						double passengerUtilSum = 0.0;
 						matchedPassengers = 0 ;
 						ZahraUtility.allList2ZeroD(matchedVehicles);
 						ZahraUtility.allList2ZeroD(vehicleUtilSum);
 						interestedPassengers = 0;
-
-						passengers = Methods.defaultOpDinfer(passengers, vehicles, operators, reachMeasure);
-						int [] defaultOperator = new int [operators.size()];
+						
+						
 						for (int i = 0 ; i < passengers.size() ; i++ )
 						{
 							passengers.get(i).setMtcheVehID(-1);
@@ -149,34 +146,26 @@ public class TestMultiDiffSpace {
 								{
 									double distance = passengerCoord.distance( vehicleCoord );
 									
-									if (distance < reachMeasure && vehicles.get(j).getOperator() == passengers.get(i).defaultOperator)
+									if (distance < reachMeasure)
 									{
 										passengers.get(i).neighbour++;
 										 
-										if (distance < finalDist && vehicles.get(j).capacity > 0 && vehicles.get(j).getOperator() == passengers.get(i).defaultOperator)
+										if (distance < finalDist && vehicles.get(j).capacity > 0 )
 										{
 											finalDist = distance;
 											passengers.get(i).setMtcheVehID(j);	
 										}
 									}
 								}
+								if (i == 0)
+									operatorsFleetSize[vehicles.get(j).operator - 1]++;
 								
 							}// end of vehicle loop
-							
-							
-							//identifying and counting interested passengers based on their previous experience or available vehicle neighbours
-							if (passengers.get(i).neighbour > passInterestThres || passengers.get(i).utility > passUtilThres )
-							{
-								passengers.get(i).setInterest(1);
-								interestedPassengers++;
-							}
-							else
-								passengers.get(i).setInterest(0);
-							
+													
 							 
 							
 							//assigning the previously identified nearest vehicle to interested passengers
-							if (passengers.get(i).getInterest() == 1 && passengers.get(i).mtcheVehID > -1 )
+							if (passengers.get(i).mtcheVehID > -1 )
 							{
 								int thisVehID = passengers.get(i).mtcheVehID;
 								double util = (reachMeasure - finalDist) / reachMeasure * potentialUtil;
@@ -185,39 +174,37 @@ public class TestMultiDiffSpace {
 								vehicles.get(thisVehID).capacity-- ;
 								matchedPassengers++;
 								matchedVehicles[vehicles.get(thisVehID).operator - 1]++;
-								vehicleUtilSum[vehicles.get(thisVehID).operator - 1] += vehicles.get(thisVehID).utility;
+								vehicleUtilSum[vehicles.get(thisVehID).operator - 1] += util; //vehicles.get(thisVehID).utility;
 							}
+							
 							else
 								passengers.get(i).setUtility(0.0);
 							
 							passengerUtilSum += passengers.get(i).utility;		
-							if (passengers.get(i).defaultOperator > 0)
-								defaultOperator[passengers.get(i).defaultOperator - 1]++;
+	
 						}// end of passenger loop
 						
 
 						
 						//====================calculating the mean utility====================
 
-						double meanPassengersUtil = passengerUtilSum / passengers.size();					
+						double meanPassengersUtil = passengerUtilSum / matchedPassengers;					
 //						double [] meanVehUtil = new double [operators.size()];
-						ZahraUtility.allList2ZeroD(meanVehUtil);
+						//ZahraUtility.allList2ZeroD(meanVehUtil);
 						double [] matchedVehPercent = new double [operators.size()];
 						
 						for (int o = 0 ; o < operators.size() ; o++)
 						{
-							meanVehUtil[o] = (vehicleUtilSum[o] / vehAddedInIteration[o] );
+							meanVehUtil[o] = (vehicleUtilSum[o] / operatorsFleetSize[o] );
 							if (matchedVehicles[o] > 0)
 								matchedVehPercent [o] = matchedVehicles[o] / vehAddedInIteration[o] * 100.0;
-//							else
-//								matchedVehPercent [o] = 0;
 						}
 							
 						
 						double matchedPassPercent = (double) matchedPassengers/passengers.size() * 100;
 						 
 						
-						if (k % iterationWrite == 0 || k == 1 )//|| k == 2 || k == 3 || k == 4 || k == 5)
+						if (k % iterationWrite == 0 || k == 1 )
 						{
 							StringBuilder fileContentP = new StringBuilder();
 							StringBuilder fileContentV = new StringBuilder();
@@ -262,26 +249,27 @@ public class TestMultiDiffSpace {
 					
 					    
 					    // modifying the size of each operator's fleet based on their average utility
-//						if (k % 10 == 0)
-//						{
-						    for (int o = 0 ; o < operators.size() ; o++)
-						    {
-//						    	if (vehAddedInIteration[o] < passengerNumber )
-//						    	{
-									if(meanVehUtil[o] < vehUtilLowerThres)
-										vehAddedInIteration[o] *= 0.9;
-									else if (meanVehUtil[o] >= vehUtilUpperThres)// || defaultOperator[o] > passengerNumber * 0.2)
-										vehAddedInIteration[o] *= 1.1;
-//						    	}
-						    }
-//						}
+					    for (int o = 0 ; o < operators.size() ; o++)
+					    {
+							if(meanVehUtil[o] < vehUtilLowerThres)
+								vehAddedInIteration[o] *= 0.9;
+							
+							else if (meanVehUtil[o] >= vehUtilUpperThres)
+								vehAddedInIteration[o] *= 1.1;
+					    }
+					    
+					    if (meanPassengersUtil > passUtilThres)
+					    	passengerNumber *= 1.1;
+					    
+					    if (meanPassengersUtil > passUtilThres)
+					    	passengerNumber *= 0.9;
 					   
 
 					}// end of iterations
 					
 					for (int o = 0 ; o < operators.size() ; o++)
 					{
-						if (matchedVehicles[o] > 5 )
+						if (matchedVehicles[o] > successThreshold )
 							probability[o]++ ;
 					}
 					
@@ -298,13 +286,9 @@ public class TestMultiDiffSpace {
 //				    	prob20Per++ ;
 				    
 					allIterations++;
-		//			System.out.println("total:" + allIterations);
-		//		    bufferedWriter.write(probability);
-		//			System.out.println(probIteration);
 					
 					bufferedWriter.close();
-				    
-				    
+				    				    
 				}//end of probability iteration
 				
 //				double successProb = (double) probability/allIterations * 100;
@@ -318,16 +302,14 @@ public class TestMultiDiffSpace {
 					pBufferedWriter.write( "," + probability[o]/allIterations * 100);
 				pBufferedWriter.write("\n");
 
-//				pBufferedWriter.write(area + "," + passengerNumber + "," + passDist + "," + v + "," + vehDist + "," +
-//										successProb + "," + successProb5 + "," + successProb10 + "," + successProb15 +
-//										"," + successProb20 + "\n");
-				
-				}//end of vehicle forLoop
-			}//end of passenger forLoop
+				}
+			
+			}// end of scenarios
 		
 		pBufferedWriter.close();
 		System.out.println("DONE");
 		Toolkit.getDefaultToolkit().beep();
+		
 	}//end of main
 
 }//end of class

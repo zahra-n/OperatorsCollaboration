@@ -55,10 +55,8 @@ public class Generators {
 	
 //======================================================================================================================================
 	
-	public static ArrayList<Vehicle> vehicleGenerator (String distribution, int [] vehAddedInIteration,
+	public static ArrayList<Vehicle> vehicleGenerator (ArrayList<Vehicle> vehicles, String distribution, int [] vehAddedInIteration,
 			ArrayList<Operator> operatorList, double xLimit, double yLimit, int vehicleCapacity){
-
-		ArrayList<Vehicle> vehicles = new ArrayList<Vehicle>();
 		
 		if (distribution.equals("N"))
 		{			
@@ -103,11 +101,9 @@ public class Generators {
 		return vehicles;
 	}
 	
-	public static ArrayList<Vehicle> vehicleLocalGenerator (String distribution, int [] vehAddedInIteration,
+	public static ArrayList<Vehicle> vehicleLocalGenerator (ArrayList<Vehicle> vehicles, String distribution, int [] vehAddedInIteration,
 			ArrayList<Operator> operatorList, double xLimit, double yLimit, int vehicleCapacity){
 
-		ArrayList<Vehicle> vehicles = new ArrayList<Vehicle>();
-		
 		if (distribution.equals("N"))
 		{			
 			int startingID = -1; // this is necessary to have unique id for vehicles through all iterations
@@ -118,7 +114,7 @@ public class Generators {
 			for (int o = 0 ; o < operatorList.size() ; o++)
 			{
 				double xLimitPartial = operatorList.get(o).getMarketShare() * xLimit;
-//				double ylimitPartial = operatorList.get(o).getMarketShare() * yLimit;
+
 				for (int i = 0 ; i < vehAddedInIteration[o] ; i++ )
 				{
 					Random rnd = new Random();
@@ -158,10 +154,9 @@ public class Generators {
 		return vehicles;
 	}
 	
-	public static ArrayList<Vehicle> vehiclePolarGenerator (String distribution, int [] vehAddedInIteration,
+	public static ArrayList<Vehicle> vehiclePolarGenerator (ArrayList<Vehicle> vehicles, String distribution, int [] vehAddedInIteration,
 			ArrayList<Operator> operatorList, double xLimit, double yLimit, int vehicleCapacity){
 
-		ArrayList<Vehicle> vehicles = new ArrayList<Vehicle>();
 		
 		if (distribution.equals("N"))
 		{			
@@ -179,7 +174,7 @@ public class Generators {
 					Random rnd = new Random();
 					Point vehicleCoord = new Point();
 					double alpha = Math.random() * tetha + startPoint;
-					double radius = Math.abs(rnd.nextGaussian() * 0.125) * xLimit ;
+					double radius = Math.abs(rnd.nextGaussian() * 0.125 ) * xLimit ;
 					vehicleCoord.setLocation(radius * Math.cos(alpha) + xLimit/2 , radius * Math.sin(alpha) + yLimit/2 );
 					Vehicle tempVehicle = new Vehicle (vehicleIdCounter, vehicleCoord, 0.0, 0, vehicleCapacity, operatorList.get(o).getCode(), 1);
 					vehicles.add(tempVehicle);

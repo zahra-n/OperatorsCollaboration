@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Random;
 
 import utilities.Vehicle;
 import utilities.Generators;
@@ -25,7 +24,7 @@ public class MultiPlatformDiffSpace {
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws IOException {
-		String outputDir = "G:\\My Drive\\Zahra-Navidi_PhD\\OperatorsCompetition\\";
+		String outputDir = "C:\\Users\\znavidikasha\\eclipse\\OperatorsCompetition\\";
 		// TODO Auto-generated method stub
 		
 		/*
@@ -34,27 +33,32 @@ public class MultiPlatformDiffSpace {
 		double xLimit = 3000; //in meter
 		double yLimit = 3000; //in meter
 		int area = (int) (xLimit * yLimit / Math.pow(10, 6));
-		String passDist = "N"; // for normal distribution
-		String vehDist = "N"; // for normal distribution
+		String passDist = "U";
+		String vehDist = "N";
 		int passengerNumber = 900;
+		int successThreshold = 5;
 		int probIteration = 100;
 		int iterations = 100;
 		int iterationWrite = 50;
 		double reachMeasure = 100; // in meter
-		double potentialUtil = 100.0;
-		double vehUtilLowerThres = 40.0;
-		double vehUtilUpperThres = 80.0;
-		double passUtilThres = 40.0;
+		double potentialUtil = 5.0;
+		double vehUtilLowerThres = 2.0;
+		double vehUtilUpperThres = 4.0;
+		double passUtilThres = 2.0;
 		int vehicleCapacity = 1;
 		int passInterestThres = 5;
-		String mainDir = outputDir + "output\\multiPlatform\\differentSpace\\" + area + "sqkm\\" ;
+		String mainDir = outputDir + "output\\multiPlatform\\DifferentSpace\\" + area + "sqkm\\" ;
 		String probabilityFilePath = mainDir + "multi-diff-" + area + "sqkm_probabilities.csv";
 		Files.createDirectories(Paths.get(mainDir));
 		ArrayList<Operator> operators = new ArrayList<Operator>();
 		int operatorsNumber = ZahraUtility.csvLineCounter("input\\operators.csv");
 		int scenarios = ZahraUtility.csvColCounter("input\\operators.csv") ;
 		String[][] operatorsList = ZahraUtility.Data(operatorsNumber, scenarios, "input\\operators.csv");
-		
+		for (int i = 1 ; i < operatorsList.length ; i++)
+		{
+			Operator tempOp = new Operator(Integer.parseInt(operatorsList[i][0]), operatorsList[i][1], Double.parseDouble(operatorsList[i][2]));
+			operators.add(tempOp);
+		}
 		
 		/*
 		 * openning file for probability writing
@@ -76,7 +80,7 @@ public class MultiPlatformDiffSpace {
 			for (int o = 0 ; o < operators.size() ; o++)
 				pBufferedWriter.write(",SP_" + operators.get(o).getMarketShare() + "_" + operators.get(o).getName());
 			
-			for (int v = 300 ; v < 901 ; v+=10000)// here set the min and max of vehicle and the increment
+			for (int v = 90 ; v < 901 ; v+=10000)// here set the min and max of vehicle and the increment
 			{
 				double [] probability = new double [operators.size()]; //counting successful instances
 //				int [] prob5Per = new int [operators.size()];
@@ -95,7 +99,6 @@ public class MultiPlatformDiffSpace {
 				{
 					for (int k = 0 ; k < operators.size() ; k++)
 						vehAddedInIteration[k] = (int) (v * operators.get(k).getMarketShare());
-					
 					ArrayList<Passenger> passengers = new ArrayList <Passenger>();
 					ArrayList<Vehicle> vehicles = new ArrayList <Vehicle>();
 					double [] vehicleUtilSum = new double[operators.size()];
@@ -117,23 +120,25 @@ public class MultiPlatformDiffSpace {
 		
 					//generating the population with a normal distribution
 					passengers = Generators.passengerGenerator(passDist, passengerNumber, operators, xLimit, yLimit);
-					
-
-
+					vehicles = Generators.vehiclePolarGenerator(vehicles, vehDist, vehAddedInIteration, operators, xLimit, yLimit, vehicleCapacity);
+					passengers = Methods.defaultOpDinfer(passengers, vehicles, operators, reachMeasure);
+					vehicles.clear();
+			
 					//iterations start
 					for (int k = 1 ; k <= iterations ; k++)
 					{
-						vehicles = Generators.vehiclePolarGenerator(vehDist, vehAddedInIteration, operators, xLimit, yLimit, vehicleCapacity);
-
-						double [] meanVehUtil = new double [operators.size()];
+						int [] operatorsFleetSize = new int [operators.size()];
+						double [] meanVehUtil = new double [operators.size()];						
 						double passengerUtilSum = 0.0;
 						matchedPassengers = 0 ;
 						ZahraUtility.allList2ZeroD(matchedVehicles);
 						ZahraUtility.allList2ZeroD(vehicleUtilSum);
-						interestedPassengers = 0;
+						interestedPassengers = 0;						
 
-						passengers = Methods.defaultOpDinfer(passengers, vehicles, operators, reachMeasure);
-						int [] defaultOperator = new int [operators.size()];
+						vehicles = Generators.vehiclePolarGenerator(vehicles, vehDist, vehAddedInIteration, operators, xLimit, yLimit, vehicleCapacity);
+						
+//						passengers = Methods.defaultOpDinfer(passengers, vehicles, operators, reachMeasure);
+												
 						for (int i = 0 ; i < passengers.size() ; i++ )
 						{
 							passengers.get(i).setMtcheVehID(-1);
@@ -144,6 +149,7 @@ public class MultiPlatformDiffSpace {
 							
 							for (int j = 0 ; j < vehicles.size() ; j++ )
 							{
+								
 								Point vehicleCoord = vehicles.get(j).coordinate;
 								
 								if (Math.abs(passengerCoord.getX() - vehicleCoord.getX()) <= reachMeasure && Math.abs(passengerCoord.getY() - vehicleCoord.getY()) <= reachMeasure )
@@ -161,6 +167,8 @@ public class MultiPlatformDiffSpace {
 										}
 									}
 								}
+								if (i == 0)
+									operatorsFleetSize[vehicles.get(j).operator - 1]++;
 								
 							}// end of vehicle loop
 							
@@ -191,9 +199,8 @@ public class MultiPlatformDiffSpace {
 							else
 								passengers.get(i).setUtility(0.0);
 							
-							passengerUtilSum += passengers.get(i).utility;		
-							if (passengers.get(i).defaultOperator > 0)
-								defaultOperator[passengers.get(i).defaultOperator - 1]++;
+							passengerUtilSum += passengers.get(i).utility;
+							
 						}// end of passenger loop
 						
 
@@ -201,24 +208,21 @@ public class MultiPlatformDiffSpace {
 						//====================calculating the mean utility====================
 
 						double meanPassengersUtil = passengerUtilSum / passengers.size();					
-//						double [] meanVehUtil = new double [operators.size()];
 						ZahraUtility.allList2ZeroD(meanVehUtil);
 						double [] matchedVehPercent = new double [operators.size()];
 						
 						for (int o = 0 ; o < operators.size() ; o++)
 						{
-							meanVehUtil[o] = (vehicleUtilSum[o] / vehAddedInIteration[o] );
+							meanVehUtil[o] = (vehicleUtilSum[o] / operatorsFleetSize[o] );
 							if (matchedVehicles[o] > 0)
 								matchedVehPercent [o] = matchedVehicles[o] / vehAddedInIteration[o] * 100.0;
-//							else
-//								matchedVehPercent [o] = 0;
 						}
 							
 						
 						double matchedPassPercent = (double) matchedPassengers/passengers.size() * 100;
 						 
 						
-						if (k % iterationWrite == 0 || k == 1 )//|| k == 2 || k == 3 || k == 4 || k == 5)
+						if (k % iterationWrite == 0 || k == 1 )
 						{
 							StringBuilder fileContentP = new StringBuilder();
 							StringBuilder fileContentV = new StringBuilder();
@@ -267,13 +271,10 @@ public class MultiPlatformDiffSpace {
 //						{
 						    for (int o = 0 ; o < operators.size() ; o++)
 						    {
-//						    	if (vehAddedInIteration[o] < passengerNumber )
-//						    	{
-									if(meanVehUtil[o] < vehUtilLowerThres)
-										vehAddedInIteration[o] *= 0.9;
-									else if (meanVehUtil[o] >= vehUtilUpperThres)// || defaultOperator[o] > passengerNumber * 0.2)
-										vehAddedInIteration[o] *= 1.1;
-//						    	}
+								if(meanVehUtil[o] < vehUtilLowerThres)
+									vehAddedInIteration[o] *= 0.9;
+								else if (meanVehUtil[o] >= vehUtilUpperThres )
+									vehAddedInIteration[o] *= 1.1;
 						    }
 //						}
 					   
@@ -282,7 +283,7 @@ public class MultiPlatformDiffSpace {
 					
 					for (int o = 0 ; o < operators.size() ; o++)
 					{
-						if (matchedVehicles[o] > 5 )
+						if (matchedVehicles[o] > successThreshold )
 							probability[o]++ ;
 					}
 					
@@ -319,12 +320,10 @@ public class MultiPlatformDiffSpace {
 					pBufferedWriter.write( "," + probability[o]/allIterations * 100);
 				pBufferedWriter.write("\n");
 
-//				pBufferedWriter.write(area + "," + passengerNumber + "," + passDist + "," + v + "," + vehDist + "," +
-//										successProb + "," + successProb5 + "," + successProb10 + "," + successProb15 +
-//										"," + successProb20 + "\n");
 				
-				}//end of vehicle forLoop
-			}//end of passenger forLoop
+				}
+			
+			}//end of scenarios
 		
 		pBufferedWriter.close();
 		System.out.println("DONE");

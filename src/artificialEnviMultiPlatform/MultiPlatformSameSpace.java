@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Random;
 
 import utilities.Vehicle;
 import utilities.Generators;
@@ -25,7 +24,7 @@ public class MultiPlatformSameSpace {
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws IOException {
-		String outputDir = "G:\\My Drive\\Zahra-Navidi_PhD\\OperatorsCompetition\\";
+		String outputDir = "C:\\Users\\znavidikasha\\eclipse\\OperatorsCompetition\\test\\";
 		// TODO Auto-generated method stub
 		
 		/*
@@ -34,21 +33,23 @@ public class MultiPlatformSameSpace {
 		double xLimit = 3000; //in meter
 		double yLimit = 3000; //in meter
 		int area = (int) (xLimit * yLimit / Math.pow(10, 6));
-		String passDist = "N"; // for normal distribution
-		String vehDist = "U"; // for normal distribution
+		String passDist = "N";
+		String vehDist = "N"; 
 		int passengerNumber = 900;
+		int successThreshold = 5;
 		int probIteration = 100;
 		int iterations = 100;
 		int iterationWrite = 50;
+		double multiHmngPenalty = 0.25;
 		double reachMeasure = 100; // in meter
-		double potentialUtil = 100.0;
-		double vehUtilLowerThres = 40.0;
-		double vehUtilUpperThres = 80.0;
-		double passUtilThres = 40.0;
+		double potentialUtil = 5.0;
+		double vehUtilLowerThres = 2.0;
+		double vehUtilUpperThres = 4.0;
+		double passUtilThres = 2.0;
 		int vehicleCapacity = 1;
 		int passInterestThres = 5;
 		String mainDir = outputDir + "output\\multiPlatform\\SameSpace\\" + area + "sqkm\\" ;
-		String probabilityFilePath = mainDir + "multi-one-" + area + "sqkm_probabilities.csv";
+		String probabilityFilePath = mainDir + "multi-same-" + area + "sqkm_probabilities.csv";
 		Files.createDirectories(Paths.get(mainDir));
 		ArrayList<Operator> operators = new ArrayList<Operator>();
 		int operatorsNumber = ZahraUtility.csvLineCounter("input\\operators.csv");
@@ -64,9 +65,6 @@ public class MultiPlatformSameSpace {
 		 * openning file for probability writing
 		 */		
 		BufferedWriter pBufferedWriter = new BufferedWriter(new FileWriter(new File(probabilityFilePath), true));
-		pBufferedWriter.write("Area_sqKm,Population,Population_distribution,Vehicles_added_each_iteration,Vehicles_distribution");
-		for (int o = 0 ; o < operators.size() ; o++)
-			pBufferedWriter.write(",SP_" + operators.get(o).getMarketShare() + "_" + operators.get(o).getName());
 		
 		/*
 		 * starting for loops for passengers and vehicles
@@ -83,7 +81,7 @@ public class MultiPlatformSameSpace {
 			for (int o = 0 ; o < operators.size() ; o++)
 				pBufferedWriter.write(",SP_" + operators.get(o).getMarketShare() + "_" + operators.get(o).getName());
 			
-			for (int v = 300 ; v < 901 ; v+=10000)// here set the min and max of vehicle and the increment
+			for (int v = 90 ; v < 901 ; v+=10000)// here set the min and max of vehicle and the increment
 			{
 				double [] probability = new double [operators.size()]; //counting successful instances
 //				int [] prob5Per = new int [operators.size()];
@@ -123,27 +121,33 @@ public class MultiPlatformSameSpace {
 		
 					//generating the population with a normal distribution
 					passengers = Generators.passengerGenerator(passDist, passengerNumber, operators, xLimit, yLimit);
+					vehicles = Generators.vehicleGenerator(vehicles, vehDist, vehAddedInIteration, operators, xLimit, yLimit, vehicleCapacity);
+					
+					passengers = Methods.defaultOpDinfer(passengers, vehicles, operators, reachMeasure);
+					vehicles.clear();
 					
 			
 					//iterations start
 					for (int k = 1 ; k <= iterations ; k++)
 					{
-						int extraDemand = interestedPassengers - matchedPassengers;
-						double [] meanVehUtil = new double [operators.size()];
+						int [] operatorsFleetSize = new int [operators.size()];
+						double [] meanVehUtil = new double [operators.size()];						
 						double passengerUtilSum = 0.0;
 						matchedPassengers = 0 ;
 						ZahraUtility.allList2ZeroD(matchedVehicles);
 						ZahraUtility.allList2ZeroD(vehicleUtilSum);
-						interestedPassengers = 0;
+						interestedPassengers = 0;						
 
-						vehicles = Generators.vehicleGenerator(vehDist, vehAddedInIteration, operators, xLimit, yLimit, vehicleCapacity);
-					
-						passengers = Methods.defaultOpDinfer(passengers, vehicles, operators, reachMeasure);
-						int [] defaultOperator = new int [operators.size()];
+						vehicles = Generators.vehicleGenerator(vehicles, vehDist, vehAddedInIteration, operators, xLimit, yLimit, vehicleCapacity);
+						
+//						passengers = Methods.defaultOpDinfer(passengers, vehicles, operators, reachMeasure);
+												
 						for (int i = 0 ; i < passengers.size() ; i++ )
 						{
 							passengers.get(i).setMtcheVehID(-1);
 							passengers.get(i).setNeighbour(0);
+							int multiHmngPenaltySwch = 0;
+							int [] neighbours = new int [operators.size()];
 							
 							Point passengerCoord = passengers.get(i).coordinate;
 							double finalDist = xLimit;
@@ -157,23 +161,37 @@ public class MultiPlatformSameSpace {
 								{
 									double distance = passengerCoord.distance( vehicleCoord );
 									
-									if (distance < reachMeasure && vehicles.get(j).getOperator() == passengers.get(i).defaultOperator)
+									if (distance < reachMeasure)// && vehicles.get(j).getOperator() == passengers.get(i).defaultOperator)
 									{
+										neighbours[vehicles.get(j).getOperator() - 1]++;
 										passengers.get(i).neighbour++;
 										 
-										if (distance < finalDist && vehicles.get(j).capacity > 0 && vehicles.get(j).getOperator() == passengers.get(i).defaultOperator)
+										if (distance < finalDist && vehicles.get(j).capacity > 0)
 										{
-											finalDist = distance;
-											passengers.get(i).setMtcheVehID(j);	
+											if (vehicles.get(j).getOperator() == passengers.get(i).defaultOperator)
+											{
+												finalDist = distance;
+												passengers.get(i).setMtcheVehID(j);
+												multiHmngPenaltySwch = 0;
+											}
+											else
+											{
+												finalDist = distance;
+												passengers.get(i).setMtcheVehID(j);
+												multiHmngPenaltySwch = 1;
+											}
+												
 										}
 									}
 								}
+								if (i == 0)
+									operatorsFleetSize[vehicles.get(j).operator - 1]++;
 								
 							}// end of vehicle loop
 							
 							
 							//identifying and counting interested passengers based on their previous experience or available vehicle neighbours
-							if (passengers.get(i).neighbour > passInterestThres || passengers.get(i).utility > passUtilThres )
+							if (neighbours. > passInterestThres || passengers.get(i).utility > passUtilThres )//passengers.get(i).neighbour
 							{
 								passengers.get(i).setInterest(1);
 								interestedPassengers++;
@@ -187,7 +205,7 @@ public class MultiPlatformSameSpace {
 							if (passengers.get(i).getInterest() == 1 && passengers.get(i).mtcheVehID > -1 )
 							{
 								int thisVehID = passengers.get(i).mtcheVehID;
-								double util = (reachMeasure - finalDist) / reachMeasure * potentialUtil;
+								double util = (reachMeasure - finalDist) / reachMeasure * potentialUtil - multiHmngPenaltySwch * multiHmngPenalty;
 								passengers.get(i).setUtility(util);
 								vehicles.get(thisVehID).setUtility(util);
 								vehicles.get(thisVehID).capacity-- ;
@@ -198,9 +216,8 @@ public class MultiPlatformSameSpace {
 							else
 								passengers.get(i).setUtility(0.0);
 							
-							passengerUtilSum += passengers.get(i).utility;		
-							if (passengers.get(i).defaultOperator > 0)
-								defaultOperator[passengers.get(i).defaultOperator - 1]++;
+							passengerUtilSum += passengers.get(i).utility;
+							
 						}// end of passenger loop
 						
 
@@ -208,24 +225,21 @@ public class MultiPlatformSameSpace {
 						//====================calculating the mean utility====================
 
 						double meanPassengersUtil = passengerUtilSum / passengers.size();					
-//						double [] meanVehUtil = new double [operators.size()];
 						ZahraUtility.allList2ZeroD(meanVehUtil);
 						double [] matchedVehPercent = new double [operators.size()];
 						
 						for (int o = 0 ; o < operators.size() ; o++)
 						{
-							meanVehUtil[o] = (vehicleUtilSum[o] / vehAddedInIteration[o] );
-							if (matchedVehicles[o] > 0)// && vehAddedInIteration[o] > 0)
+							meanVehUtil[o] = (vehicleUtilSum[o] / operatorsFleetSize[o] );
+							if (matchedVehicles[o] > 0)
 								matchedVehPercent [o] = matchedVehicles[o] / vehAddedInIteration[o] * 100.0;
-//							else
-//								matchedVehPercent [o] = 0;
 						}
 							
 						
 						double matchedPassPercent = (double) matchedPassengers/passengers.size() * 100;
 						 
 						
-						if (k % iterationWrite == 0 || k == 1 )//|| k == 2 || k == 3 || k == 4 || k == 5)
+						if (k % iterationWrite == 0 || k == 1 )
 						{
 							StringBuilder fileContentP = new StringBuilder();
 							StringBuilder fileContentV = new StringBuilder();
@@ -234,7 +248,7 @@ public class MultiPlatformSameSpace {
 							for (int i = 0 ; i < passengers.size(); ++i)
 								fileContentP.append(k + "," + passengers.get(i).toString() + "\n");
 							
-							fileContentV.append("Iteration,Vehicle_ID,X,Y,Utility,Capacity,Neighbours,Operator" + "\n");
+							fileContentV.append("Iteration,Vehicle_ID,X,Y,Utility,Capacity,Neighbours,Operator,interest" + "\n");
 							for (int i = 0 ; i < vehicles.size(); ++i)
 								fileContentV.append(k + "," +vehicles.get(i).toString() + "\n");
 							
@@ -274,13 +288,10 @@ public class MultiPlatformSameSpace {
 //						{
 						    for (int o = 0 ; o < operators.size() ; o++)
 						    {
-//						    	if (vehAddedInIteration[o] < passengerNumber )
-//						    	{
-									if(meanVehUtil[o] < vehUtilLowerThres)
-										vehAddedInIteration[o] *= 0.9;
-									else if (meanVehUtil[o] >= vehUtilUpperThres || defaultOperator[o] > passengerNumber * 0.2)
-										vehAddedInIteration[o] *= 1.1;
-//						    	}
+								if(meanVehUtil[o] < vehUtilLowerThres)
+									vehAddedInIteration[o] *= 0.9;
+								else if (meanVehUtil[o] >= vehUtilUpperThres )
+									vehAddedInIteration[o] *= 1.1;
 						    }
 //						}
 					   
@@ -289,7 +300,7 @@ public class MultiPlatformSameSpace {
 					
 					for (int o = 0 ; o < operators.size() ; o++)
 					{
-						if (matchedVehicles[o] > 5 )
+						if (matchedVehicles[o] > successThreshold )
 							probability[o]++ ;
 					}
 					
@@ -326,12 +337,10 @@ public class MultiPlatformSameSpace {
 					pBufferedWriter.write( "," + probability[o]/allIterations * 100);
 				pBufferedWriter.write("\n");
 
-//				pBufferedWriter.write(area + "," + passengerNumber + "," + passDist + "," + v + "," + vehDist + "," +
-//										successProb + "," + successProb5 + "," + successProb10 + "," + successProb15 +
-//										"," + successProb20 + "\n");
 				
-				}//end of vehicle forLoop
-			}//end of passenger forLoop
+				}
+			
+			}//end of scenarios
 		
 		pBufferedWriter.close();
 		System.out.println("DONE");
